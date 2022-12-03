@@ -1050,8 +1050,8 @@ LinkerObject const& Assembly::assemble(bool eof) const
 			assertThrow(i.splitForeignPushTag().first == std::numeric_limits<size_t>::max(), AssemblyException, "Foreign tag.");
 			size_t tagId = static_cast<size_t>(i.data());
 			assertThrow(ret.bytecode.size() < 0xffffffffL, AssemblyException, "Tag too large.");
-			assertThrow(m_tagPositionsInBytecode[tagId] == std::numeric_limits<size_t>::max(), AssemblyException, "Duplicate tag position.");
-			m_tagPositionsInBytecode[tagId] = ret.bytecode.size();
+			assertThrow(m_tagPositionsInBytecode[tagId] == numeric_limits<size_t>::max(), AssemblyException, "Duplicate tag position.");
+			m_tagPositionsInBytecode[tagId] = ret.bytecode.size() - codeStart;
 			ret.bytecode.push_back(static_cast<uint8_t>(Instruction::JUMPDEST));
 			break;
 		}
