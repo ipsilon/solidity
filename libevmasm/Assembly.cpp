@@ -834,7 +834,7 @@ std::map<u256, u256> const& Assembly::optimiseInternal(
 	return *m_tagReplacements;
 }
 
-LinkerObject const& Assembly::assemble(bool eof) const
+LinkerObject const& Assembly::assemble() const
 {
 	assertThrow(!m_invalid, AssemblyException, "Attempted to assemble invalid Assembly object.");
 	// Return the already assembled object, if present.
@@ -903,7 +903,7 @@ LinkerObject const& Assembly::assemble(bool eof) const
 		}
 	uint8_t tagPush = static_cast<uint8_t>(pushInstruction(bytesPerTag));
 
-	unsigned bytesRequiredIncludingData = (eof ? 10 : 0) + bytesRequiredForCode + 1 + static_cast<unsigned>(m_auxiliaryData.size());
+	unsigned bytesRequiredIncludingData = (m_eofVersion.has_value() ? 10 : 0) + bytesRequiredForCode + 1 + static_cast<unsigned>(m_auxiliaryData.size());
 	for (auto const& sub: m_subs)
 		bytesRequiredIncludingData += static_cast<unsigned>(sub->assemble().bytecode.size());
 
@@ -914,7 +914,7 @@ LinkerObject const& Assembly::assemble(bool eof) const
 	// Insert EOF1 header.
 	bytesRef eofCodeLength(&ret.bytecode.back(), 0);
 	bytesRef eofDataLength(&ret.bytecode.back(), 0);
-	if (eof)
+	if (m_eofVersion.has_value())
 	{
 		// TODO: empty data is disallowed
 		ret.bytecode.push_back(0xef);
@@ -1073,7 +1073,7 @@ LinkerObject const& Assembly::assemble(bool eof) const
 		ret.bytecode.push_back(static_cast<uint8_t>(Instruction::INVALID));
 
 	auto const codeLength = ret.bytecode.size() - codeStart;
-	if (eof)
+	if (m_eofVersion.has_value())
 	{
 		assertThrow(codeLength > 0 && codeLength <= 0xffff, AssemblyException, "Invalid code section size.");
 		toBigEndian(codeLength, eofCodeLength);
@@ -1158,7 +1158,7 @@ LinkerObject const& Assembly::assemble(bool eof) const
 	}
 
 	auto const dataLength = ret.bytecode.size() - dataStart;
-	if (eof)
+	if (m_eofVersion.has_value())
 	{
 		assertThrow(/*dataLength >= 0 && */ dataLength <= 0xffff, AssemblyException, "Invalid data section size.");
 		toBigEndian(dataLength, eofDataLength);
