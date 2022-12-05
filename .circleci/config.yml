@@ -613,9 +613,10 @@ defaults:
         size: large
         shell: bash.exe
 
-  - eof_ubuntu2204_small: &eof_ubuntu2204_small
-      <<: *base_cimg_small
-      resource_class: small
+  - base_ubuntu2204_large: &base_ubuntu2204_large
+      docker:
+        - image: cimg/base:current
+      resource_class: large
       environment:
         TERM: xterm
         MAKEFLAGS: -j 5
@@ -1248,7 +1249,7 @@ jobs:
       - soltest_all
 
   t_ubu_soltest_eof: &t_ubu_soltest_eof
-    <<: *eof_ubuntu2204_small
+    <<: *base_ubuntu2204_large
     environment:
       CMAKE_OPTIONS: -DUSE_CVC4=OFF
       EVM: "shanghai"
