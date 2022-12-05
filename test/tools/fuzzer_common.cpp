@@ -190,7 +190,7 @@ void FuzzerUtil::testConstantOptimizer(std::string const& _input, bool _quiet)
 
 	for (bool isCreation: {false, true})
 	{
-		Assembly assembly{langutil::EVMVersion{}, isCreation, {}};
+		Assembly assembly{langutil::EVMVersion{}, isCreation, nullopt, {}};
 		for (u256 const& n: numbers)
 		{
 			if (!_quiet)
