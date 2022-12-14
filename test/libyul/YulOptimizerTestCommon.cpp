@@ -320,13 +320,14 @@ YulOptimizerTestCommon::YulOptimizerTestCommon(
 			FunctionHoister::run(*m_context, *m_ast);
 			FunctionGrouper::run(*m_context, *m_ast);
 			size_t maxIterations = 16;
-			StackCompressor::run(*m_dialect, *m_object, true, maxIterations);
+			StackCompressor::run(*m_dialect, nullopt /* TODO */, *m_object, true, maxIterations);
 			BlockFlattener::run(*m_context, *m_ast);
 		}},
 		{"fullSuite", [&]() {
 			GasMeter meter(dynamic_cast<EVMDialect const&>(*m_dialect), false, 200);
 			OptimiserSuite::run(
 				*m_dialect,
+				nullopt, // TODO
 				&meter,
 				*m_object,
 				true,
@@ -339,6 +340,7 @@ YulOptimizerTestCommon::YulOptimizerTestCommon(
 			disambiguate();
 			StackLimitEvader::run(*m_context, *m_object, CompilabilityChecker{
 				*m_dialect,
+				nullopt, // TODO
 				*m_object,
 				true
 			}.unreachableVariables);
@@ -452,6 +454,7 @@ void YulOptimizerTestCommon::updateContext()
 	m_nameDispenser = std::make_unique<NameDispenser>(*m_dialect, *m_object->code, m_reservedIdentifiers);
 	m_context = std::make_unique<OptimiserStepContext>(OptimiserStepContext{
 		*m_dialect,
+		nullopt, // TODO
 		*m_nameDispenser,
 		m_reservedIdentifiers,
 		frontend::OptimiserSettings::standard().expectedExecutionsPerDeployment

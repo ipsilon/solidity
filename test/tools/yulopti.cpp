@@ -220,7 +220,7 @@ public:
 					{
 						Object obj;
 						obj.code = m_ast;
-						StackCompressor::run(m_dialect, obj, true, 16);
+						StackCompressor::run(m_dialect, nullopt /* TODO */, obj, true, 16);
 						break;
 					}
 					default:
@@ -249,6 +249,7 @@ private:
 	NameDispenser m_nameDispenser{m_dialect, m_reservedIdentifiers};
 	OptimiserStepContext m_context{
 		m_dialect,
+		nullopt, // TODO
 		m_nameDispenser,
 		m_reservedIdentifiers,
 		solidity::frontend::OptimiserSettings::standard().expectedExecutionsPerDeployment

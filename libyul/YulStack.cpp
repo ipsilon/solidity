@@ -234,6 +234,7 @@ void YulStack::optimize(Object& _object, bool _isCreation)
 
 	OptimiserSuite::run(
 		dialect,
+		m_eofVersion,
 		meter.get(),
 		_object,
 		// Defaults are the minimum necessary to avoid running into "Stack too deep" constantly.

@@ -203,6 +203,8 @@ bool SemanticInformation::breaksCSEAnalysisBlock(AssemblyItem const& _item, bool
 	case PushDeployTimeAddress:
 	case AssignImmutable:
 	case VerbatimBytecode:
+	case CallF:
+	case RetF:
 		return true;
 	case Push:
 	case PushTag:

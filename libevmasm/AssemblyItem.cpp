@@ -159,6 +159,10 @@ size_t AssemblyItem::bytesRequired(size_t _addressLength, Precision _precision) 
 	}
 	case VerbatimBytecode:
 		return std::get<2>(*m_verbatimBytecode).size();
+	case CallF:
+		return 3;
+	case RetF:
+		return 1;
 	default:
 		break;
 	}
@@ -175,6 +179,15 @@ size_t AssemblyItem::arguments() const
 		return std::get<0>(*m_verbatimBytecode);
 	else if (type() == AssignImmutable)
 		return 2;
+	else if (type() == CallF)
+	{
+		assertThrow(m_functionSignature.has_value(), AssemblyException, "");
+		return std::get<0>(*m_functionSignature);
+	}
+	else if (type() == RetF)
+	{
+		return static_cast<size_t>(data());
+	}
 	else
 		return 0;
 }
@@ -200,7 +213,12 @@ size_t AssemblyItem::returnValues() const
 	case Tag:
 		return 0;
 	case VerbatimBytecode:
-		return std::get<1>(*m_verbatimBytecode);
+		return get<1>(*m_verbatimBytecode);
+	case CallF:
+		assertThrow(m_functionSignature.has_value(), AssemblyException, "");
+		return std::get<1>(*m_functionSignature);
+	case RetF:
+		return 0;
 	default:
 		break;
 	}
@@ -325,6 +343,12 @@ std::string AssemblyItem::toAssemblyText(Assembly const& _assembly) const
 	case VerbatimBytecode:
 		text = std::string("verbatimbytecode_") + util::toHex(std::get<2>(*m_verbatimBytecode));
 		break;
+	case CallF:
+		text = "callf(" +  to_string(static_cast<size_t>(data())) + ")";
+		break;
+	case RetF:
+		text = "retf";
+		break;
 	default:
 		assertThrow(false, InvalidOpcode, "");
 	}
@@ -351,6 +375,12 @@ std::ostream& solidity::evmasm::operator<<(std::ostream& _out, AssemblyItem cons
 		break;
 	case Push:
 		_out << " PUSH " << std::hex << _item.data() <<  std::dec;
+		break;
+	case CallF:
+		_out << " CALLF " << dec << _item.data();
+		break;
+	case RetF:
+		_out << " RETF";
 		break;
 	case PushTag:
 	{

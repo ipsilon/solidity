@@ -1,4 +1,4 @@
-/*
+langutil::EVMVersion _evmVersion, /*
 	This file is part of solidity.
 
 	solidity is free software: you can redistribute it and/or modify
@@ -37,6 +37,13 @@ struct SourceLocation;
 namespace solidity::yul
 {
 
+class NoOutputAssembly;
+
+struct NoOutputAssemblyContext
+{
+	size_t numFunctions = 0;
+	std::map<uint16_t, std::pair<uint8_t, uint8_t>> functionSignatures;
+};
 
 /**
  * Assembly class that just ignores everything and only performs stack counting.
@@ -45,8 +52,10 @@ namespace solidity::yul
 class NoOutputAssembly: public AbstractAssembly
 {
 public:
-	explicit NoOutputAssembly(langutil::EVMVersion _evmVersion): m_evmVersion(_evmVersion) { }
+	explicit NoOutputAssembly(langutil::EVMVersion _evmVersion, bool _hasFunctions): m_evmVersion(_evmVersion), m_hasFunctions(_hasFunctions) { }
 	~NoOutputAssembly() override = default;
+
+	bool supportsFunctions() const override { return m_hasFunctions; }
 
 	void setSourceLocation(langutil::SourceLocation const&) override {}
 	int stackHeight() const override { return m_stackHeight; }
@@ -66,6 +75,11 @@ public:
 
 	void appendAssemblySize() override;
 	std::pair<std::shared_ptr<AbstractAssembly>, SubID> createSubAssembly(bool _creation, std::optional<uint8_t> _eofVersion, std::string _name = "") override;
+	FunctionID createFunction(uint8_t _args, uint8_t rets) override;
+	void beginFunction(FunctionID) override;
+	void endFunction() override;
+	void appendFunctionCall(FunctionID _functionID) override;
+	void appendFunctionReturn() override;
 	void appendDataOffset(std::vector<SubID> const& _subPath) override;
 	void appendDataSize(std::vector<SubID> const& _subPath) override;
 	SubID appendData(bytes const& _data) override;
@@ -80,6 +94,8 @@ public:
 	langutil::EVMVersion evmVersion() const override { return m_evmVersion; }
 
 private:
+	bool m_hasFunctions = false;
+	std::shared_ptr<NoOutputAssemblyContext> m_context;
 	int m_stackHeight = 0;
 	langutil::EVMVersion m_evmVersion;
 };

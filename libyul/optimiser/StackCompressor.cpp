@@ -237,6 +237,7 @@ void eliminateVariablesOptimizedCodegen(
 
 bool StackCompressor::run(
 	Dialect const& _dialect,
+	std::optional<uint8_t> _eofVersion,
 	Object& _object,
 	bool _optimizeStackAllocation,
 	size_t _maxIterations
@@ -257,7 +258,7 @@ bool StackCompressor::run(
 	if (usesOptimizedCodeGenerator)
 	{
 		yul::AsmAnalysisInfo analysisInfo = yul::AsmAnalyzer::analyzeStrictAssertCorrect(_dialect, _object);
-		std::unique_ptr<CFG> cfg = ControlFlowGraphBuilder::build(analysisInfo, _dialect, *_object.code);
+		std::unique_ptr<CFG> cfg = ControlFlowGraphBuilder::build(analysisInfo, _dialect, _eofVersion, *_object.code);
 		eliminateVariablesOptimizedCodegen(
 			_dialect,
 			*_object.code,
@@ -268,7 +269,7 @@ bool StackCompressor::run(
 	else
 		for (size_t iterations = 0; iterations < _maxIterations; iterations++)
 		{
-			std::map<YulString, int> stackSurplus = CompilabilityChecker(_dialect, _object, _optimizeStackAllocation).stackDeficit;
+			std::map<YulString, int> stackSurplus = CompilabilityChecker(_dialect, _eofVersion, _object, _optimizeStackAllocation).stackDeficit;
 			if (stackSurplus.empty())
 				return true;
 			eliminateVariables(

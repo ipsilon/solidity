@@ -176,11 +176,17 @@ enum class Instruction: uint8_t
 	SWAP15,                   ///< swaps the highest and 16th highest value on the stack
 	SWAP16,                   ///< swaps the highest and 17th highest value on the stack
 
-	LOG0 = 0xa0,              ///< Makes a log entry; no topics.
-	LOG1,                     ///< Makes a log entry; 1 topic.
-	LOG2,                     ///< Makes a log entry; 2 topics.
-	LOG3,                     ///< Makes a log entry; 3 topics.
-	LOG4,                     ///< Makes a log entry; 4 topics.
+	CALLF = 0xb0,
+	RETF,
+	JUMPF,
+
+	CREATE = 0xf0,		///< create a new account with associated code
+	CALL,				///< message-call into an account
+	CALLCODE,			///< message-call with another account's code only
+	RETURN,				///< halt execution returning output data
+	DELEGATECALL,		///< like CALLCODE but keeps caller's value and sender
+	CREATE2 = 0xf5,		///< create new account with associated code at address `sha3(0xff + sender + salt + init code) % 2**160`
+	STATICCALL = 0xfa,	///< like CALL but disallow state modifications
 
 	CREATE = 0xf0,            ///< create a new account with associated code
 	CALL,                     ///< message-call into an account
