@@ -277,6 +277,7 @@ YulStack::assembleWithDeployed(std::optional<std::string_view> _deployName)
 		yulAssert(creationObject.bytecode->immutableReferences.empty(), "Leftover immutables.");
 		creationObject.assembly = creationAssembly->assemblyString(m_debugInfoSelection);
 		creationObject.sourceMappings = std::make_unique<std::string>(
+		// TODO: fix for EOF
 			evmasm::AssemblyItem::computeSourceMapping(
 				creationAssembly->items(),
 				{{m_charStream->name(), 0}}
