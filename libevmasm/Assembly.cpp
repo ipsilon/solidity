@@ -760,13 +760,11 @@ std::map<u256, u256> const& Assembly::optimiseInternal(
 		}
 
 		// This only modifies PushTags, we have to run again to actually remove code.
-		// TODO: investigate options for EOF.
-		if (_settings.runDeduplicate && !m_eofVersion.has_value())
-		{
-			BlockDeduplicator deduplicator{m_codeSections.front().items};
-			if (deduplicator.deduplicate())
+		if (_settings.runDeduplicate)
+			for (auto& section: m_codeSections)
 			{
-				for (auto const& replacement: deduplicator.replacedTags())
+				BlockDeduplicator deduplicator{section.items};
+				if (deduplicator.deduplicate())
 				{
 					assertThrow(
 						replacement.first <= std::numeric_limits<size_t>::max() && replacement.second <= std::numeric_limits<size_t>::max(),
@@ -782,9 +780,7 @@ std::map<u256, u256> const& Assembly::optimiseInternal(
 					if (_tagsReferencedFromOutside.erase(static_cast<size_t>(replacement.first)))
 						_tagsReferencedFromOutside.insert(static_cast<size_t>(replacement.second));
 				}
-				count++;
 			}
-		}
 
 		// TODO: investigate for EOF
 		if (_settings.runCSE && !m_eofVersion.has_value())
