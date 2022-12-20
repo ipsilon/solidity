@@ -859,7 +859,7 @@ LinkerObject const& Assembly::assemble() const
 
 	LinkerObject& ret = m_assembledObject;
 
-	bool const needsEOFContainer = m_eofVersion.has_value();
+	bool const eof = m_eofVersion.has_value();
 
 	size_t subTagSize = 1;
 	std::map<u256, std::pair<std::string, std::vector<size_t>>> immutableReferencesBySub;
@@ -944,10 +944,11 @@ LinkerObject const& Assembly::assemble() const
 	std::optional<size_t> dataSectionSizeOffset;
 	auto setDataSectionSize = [&](size_t _size) {
 		assertThrow(dataSectionSizeOffset.has_value(), AssemblyException, "");
+		assertThrow(_size <= 0xFFFF, AssemblyException, "");
 		bytesRef length(ret.bytecode.data() + *dataSectionSizeOffset, 2);
-		toBigEndian(_size, length);
+		toBigEndian(static_cast<uint16_t>(_size), length);
 	};
-	if (needsEOFContainer)
+	if (eof)
 	{
 		bool needsTypeSection = m_codeSections.size() > 1;
 		// TODO: empty data is disallowed
@@ -990,24 +991,26 @@ LinkerObject const& Assembly::assemble() const
 	unsigned headerSize = static_cast<unsigned>(ret.bytecode.size());
 	unsigned bytesRequiredForCode = codeSize(static_cast<unsigned>(subTagSize));
 	m_tagPositionsInBytecode = vector<size_t>(m_usedTags, numeric_limits<size_t>::max());
-	map<size_t, pair<size_t, size_t>> tagRef;
+	struct TagRef
+	{
+		size_t subId = 0;
+		size_t tagId = 0;
+		bool isRelative = 0;
+	};
+	map<size_t, TagRef> tagRef;
 	multimap<h256, unsigned> dataRef;
 	multimap<size_t, size_t> subRef;
 	vector<unsigned> sizeRef; ///< Pointers to code locations where the size of the program is inserted
 	unsigned bytesPerTag = numberEncodingSize(headerSize + bytesRequiredForCode + bytesRequiredForDataUpperBound);
 	uint8_t tagPush = static_cast<uint8_t>(pushInstruction(bytesPerTag));
 
-	if (!needsEOFContainer)
+	if (!eof)
 		++bytesRequiredForCode; ///< Additional INVALID marker.
 
 	unsigned bytesRequiredIncludingDataAndSubsUpperBound = headerSize + bytesRequiredForCode + bytesRequiredForDataAndSubsUpperBound;
 	unsigned bytesPerDataRef = numberEncodingSize(bytesRequiredIncludingDataAndSubsUpperBound);
 	uint8_t dataRefPush = static_cast<uint8_t>(pushInstruction(bytesPerDataRef));
 	ret.bytecode.reserve(bytesRequiredIncludingDataAndSubsUpperBound);
-
-	auto const codeStart = ret.bytecode.size();
-
-
 
 	for (auto&& [codeSectionIndex, codeSection]: m_codeSections | ranges::views::enumerate)
 	{
@@ -1110,8 +1113,10 @@ LinkerObject const& Assembly::assemble() const
 			}
 			case PushTag:
 			{
+				assertThrow(!eof, AssemblyException, "Push tag in EOF code");
 				ret.bytecode.push_back(tagPush);
-				tagRef[ret.bytecode.size()] = i.splitForeignPushTag();
+				auto [subId, tagId] = i.splitForeignPushTag();
+				tagRef[ret.bytecode.size()] = TagRef{subId, tagId, false};
 				ret.bytecode.resize(ret.bytecode.size() + bytesPerTag);
 				break;
 			}
@@ -1166,7 +1171,7 @@ LinkerObject const& Assembly::assemble() const
 			{
 				// Expect 2 elements on stack (source, dest_base)
 				auto const& offsets = immutableReferencesBySub[i.data()].second;
-				for (size_t i = 0; i < offsets.size(); ++i)
+				for (size_t i = 0u; i < offsets.size(); ++i)
 				{
 					if (i != offsets.size() - 1)
 					{
@@ -1199,12 +1204,14 @@ LinkerObject const& Assembly::assemble() const
 				size_t tagId = static_cast<size_t>(i.data());
 				assertThrow(ret.bytecode.size() < 0xffffffffL, AssemblyException, "Tag too large.");
 				assertThrow(m_tagPositionsInBytecode[tagId] == numeric_limits<size_t>::max(), AssemblyException, "Duplicate tag position.");
-				m_tagPositionsInBytecode[tagId] = ret.bytecode.size() - codeStart;
-				ret.bytecode.push_back(static_cast<uint8_t>(Instruction::JUMPDEST));
+				m_tagPositionsInBytecode[tagId] = ret.bytecode.size();
+				if (!eof)
+					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::JUMPDEST));
 				break;
 			}
 			case CallF:
 			{
+				assertThrow(eof, AssemblyException, "Function call (CALLF) in non-EOF code");
 				ret.bytecode.push_back(static_cast<uint8_t>(Instruction::CALLF));
 				ret.bytecode.resize(ret.bytecode.size() + 2);
 				bytesRef byr(&ret.bytecode.back() + 1 - 2, 2);
@@ -1213,7 +1220,19 @@ LinkerObject const& Assembly::assemble() const
 			}
 			case RetF:
 			{
+				assertThrow(eof, AssemblyException, "Function return (RETF) in non-EOF code");
 				ret.bytecode.push_back(static_cast<uint8_t>(Instruction::RETF));
+				break;
+			}
+			case RelativeJump:
+			case ConditionalRelativeJump:
+			{
+				assertThrow(eof, AssemblyException, "Relative jump in non-EOF code");
+				ret.bytecode.push_back(static_cast<uint8_t>(i.type() == RelativeJump ? Instruction::RJUMP : Instruction::RJUMPI));
+				auto [subId, tagId] = i.splitForeignPushTag();
+				tagRef[ret.bytecode.size()] = TagRef{subId, tagId, true};
+				ret.bytecode.push_back(0x00);
+				ret.bytecode.push_back(0x00);
 				break;
 			}
 			default:
@@ -1254,7 +1273,7 @@ LinkerObject const& Assembly::assemble() const
 
 		auto sectionEnd = ret.bytecode.size();
 
-		if (needsEOFContainer)
+		if (eof)
 			setCodeSectionSize(codeSectionIndex, sectionEnd - sectionStart);
 	}
 
@@ -1266,7 +1285,7 @@ LinkerObject const& Assembly::assemble() const
 				"Some immutables were read from but never assigned, possibly because of optimization."
 			);
 
-	if (!needsEOFContainer && (!m_subs.empty() || !m_data.empty() || !m_auxiliaryData.empty()))
+	if (!eof && (!m_subs.empty() || !m_data.empty() || !m_auxiliaryData.empty()))
 		// Append an INVALID here to help tests find miscompilation.
 		ret.bytecode.push_back(static_cast<uint8_t>(Instruction::INVALID));
 
@@ -1305,8 +1324,26 @@ LinkerObject const& Assembly::assemble() const
 		size_t pos = tagPositions[tagId];
 		assertThrow(pos != std::numeric_limits<size_t>::max(), AssemblyException, "Reference to tag without position.");
 		assertThrow(numberEncodingSize(pos) <= bytesPerTag, AssemblyException, "Tag too large for reserved space.");
-		bytesRef r(ret.bytecode.data() + i.first, bytesPerTag);
-		toBigEndian(pos, r);
+		if (relative)
+		{
+			assertThrow(m_eofVersion.has_value(), AssemblyException, "Relative jump outside EOF");
+			assertThrow(subId == numeric_limits<size_t>::max(), AssemblyException, "Relative jump to sub");
+			bytesRef r(ret.bytecode.data() + bytecodeOffset, 2);
+			assertThrow(
+				static_cast<ssize_t>(pos) - static_cast<ssize_t>(bytecodeOffset + 2u) < 0x7FFF &&
+				static_cast<ssize_t>(pos) - static_cast<ssize_t>(bytecodeOffset + 2u) >= -0x8000,
+				AssemblyException,
+				"Relative jump too far"
+			);
+			uint16_t relativeOffset = static_cast<uint16_t>(pos - (bytecodeOffset + 2u));
+			toBigEndian(relativeOffset, r);
+		}
+		else
+		{
+			assertThrow(!m_eofVersion.has_value(), AssemblyException, "Dynamic tag reference within EOF");
+			bytesRef r(ret.bytecode.data() + bytecodeOffset, bytesPerTag);
+			toBigEndian(pos, r);
+		}
 	}
 	for (auto const& [name, tagInfo]: m_namedTags)
 	{
@@ -1343,7 +1380,7 @@ LinkerObject const& Assembly::assemble() const
 
 	ret.bytecode += m_auxiliaryData;
 
-	if (needsEOFContainer && bytesRequiredForDataAndSubsUpperBound > 0 && ret.bytecode.size() == dataStart)
+	if (eof && bytesRequiredForDataAndSubsUpperBound > 0 && ret.bytecode.size() == dataStart)
 	{
 		// We have commited to a data section, but not actually needed it, so create a fake one.
 		ret.bytecode.push_back(0);
@@ -1356,25 +1393,13 @@ LinkerObject const& Assembly::assemble() const
 	}
 
 	auto dataLength = ret.bytecode.size() - dataStart;
-	if (needsEOFContainer)
+	if (eof)
 	{
-		if (bytesRequiredForDataAndSubsUpperBound < dataLength)
-		{
-			std::cout << "Auxdata: " << m_auxiliaryData.size() << std::endl;
-			std::cout << "m_data: " << m_data.size() << std::endl;
-			std::cout << "subRef: " << subRef.size() << std::endl;
-			for (auto&& [subIdPath, offset]: subRef)
-			{
-				(void)offset;
-				std::cout << "R: " << subAssemblyById(subIdPath) << std::endl;
-			}
-			std::cout << "m_subs: " << m_subs.size() << std::endl;
-			for (auto const& sub: m_subs)
-			{
-				std::cout << "sub: " << sub.get() << std::endl;
-			}
-		}
-		assertThrow(bytesRequiredForDataAndSubsUpperBound >= dataLength, AssemblyException, "More data than expected. " + to_string(dataLength) + " > " + to_string(bytesRequiredForDataUpperBound));
+		assertThrow(
+			bytesRequiredForDataAndSubsUpperBound >= dataLength,
+			AssemblyException,
+			"More data than expected. " + to_string(dataLength) + " > " + to_string(bytesRequiredForDataUpperBound)
+		);
 		if (bytesRequiredForDataAndSubsUpperBound > 0)
 		{
 			assertThrow(0 < dataLength && dataLength <= 0xffff, AssemblyException, "Invalid data section size.");
