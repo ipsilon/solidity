@@ -340,7 +340,6 @@ YulOptimizerTestCommon::YulOptimizerTestCommon(
 			disambiguate();
 			StackLimitEvader::run(*m_context, *m_object, CompilabilityChecker{
 				*m_dialect,
-				nullopt, // TODO
 				*m_object,
 				true
 			}.unreachableVariables);

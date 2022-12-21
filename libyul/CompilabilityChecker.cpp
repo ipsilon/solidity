@@ -32,7 +32,6 @@ using namespace solidity::util;
 
 CompilabilityChecker::CompilabilityChecker(
 	Dialect const& _dialect,
-	std::optional<uint8_t> _eofVersion,
 	Object const& _object,
 	bool _optimizeStackAllocation
 )

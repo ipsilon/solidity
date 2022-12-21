@@ -52,7 +52,7 @@ struct NoOutputAssemblyContext
 class NoOutputAssembly: public AbstractAssembly
 {
 public:
-	explicit NoOutputAssembly(langutil::EVMVersion _evmVersion, bool _hasFunctions): m_evmVersion(_evmVersion), m_hasFunctions(_hasFunctions) { }
+	explicit NoOutputAssembly(langutil::EVMVersion _evmVersion): m_evmVersion(_evmVersion), m_context(std::make_shared<NoOutputAssemblyContext>()) { }
 	~NoOutputAssembly() override = default;
 
 	void setSourceLocation(langutil::SourceLocation const&) override {}
@@ -92,7 +92,6 @@ public:
 	langutil::EVMVersion evmVersion() const override { return m_evmVersion; }
 
 private:
-	bool m_hasFunctions = false;
 	std::shared_ptr<NoOutputAssemblyContext> m_context;
 	int m_stackHeight = 0;
 	langutil::EVMVersion m_evmVersion;

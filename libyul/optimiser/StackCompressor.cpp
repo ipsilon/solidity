@@ -269,7 +269,7 @@ bool StackCompressor::run(
 	else
 		for (size_t iterations = 0; iterations < _maxIterations; iterations++)
 		{
-			std::map<YulString, int> stackSurplus = CompilabilityChecker(_dialect, _eofVersion, _object, _optimizeStackAllocation).stackDeficit;
+			std::map<YulString, int> stackSurplus = CompilabilityChecker(_dialect, _object, _optimizeStackAllocation).stackDeficit;
 			if (stackSurplus.empty())
 				return true;
 			eliminateVariables(
