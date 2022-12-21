@@ -317,7 +317,7 @@ struct IsZeroIsZeroJumpI: SimplePeepholeOptimizerMethod<IsZeroIsZeroJumpI>
 	}
 };
 
-struct IsZeroIsZeroRJumpI: SimplePeepholeOptimizerMethod<IsZeroIsZeroJumpI>
+struct IsZeroIsZeroRJumpI: SimplePeepholeOptimizerMethod<IsZeroIsZeroRJumpI>
 {
 	static size_t applySimple(
 		AssemblyItem const& _iszero1,
@@ -367,7 +367,7 @@ struct EqIsZeroJumpI: SimplePeepholeOptimizerMethod<EqIsZeroJumpI>
 	}
 };
 
-struct EqIsZeroRJumpI: SimplePeepholeOptimizerMethod<EqIsZeroJumpI>
+struct EqIsZeroRJumpI: SimplePeepholeOptimizerMethod<EqIsZeroRJumpI>
 {
 	static size_t applySimple(
 		AssemblyItem const& _eq,
@@ -424,7 +424,7 @@ struct DoubleJump: SimplePeepholeOptimizerMethod<DoubleJump>
 };
 
 // rjumpi(tag_1) rjump(tag_2) tag_1: -> iszero rjumpi(tag_2) tag_1:
-struct DoubleRJump: SimplePeepholeOptimizerMethod<DoubleJump>
+struct DoubleRJump: SimplePeepholeOptimizerMethod<DoubleRJump>
 {
 	static size_t applySimple(
 		AssemblyItem const& _rjumpi,
@@ -476,7 +476,7 @@ struct JumpToNext: SimplePeepholeOptimizerMethod<JumpToNext>
 	}
 };
 
-struct RJumpToNext: SimplePeepholeOptimizerMethod<JumpToNext>
+struct RJumpToNext: SimplePeepholeOptimizerMethod<RJumpToNext>
 {
 	static size_t applySimple(
 		AssemblyItem const& _rjump,

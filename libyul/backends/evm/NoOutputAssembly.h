@@ -55,8 +55,6 @@ public:
 	explicit NoOutputAssembly(langutil::EVMVersion _evmVersion, bool _hasFunctions): m_evmVersion(_evmVersion), m_hasFunctions(_hasFunctions) { }
 	~NoOutputAssembly() override = default;
 
-	bool supportsFunctions() const override { return m_hasFunctions; }
-
 	void setSourceLocation(langutil::SourceLocation const&) override {}
 	int stackHeight() const override { return m_stackHeight; }
 	void setStackHeight(int height) override { m_stackHeight = height; }
