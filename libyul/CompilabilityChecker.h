@@ -49,7 +49,7 @@ struct CompilabilityChecker
 		Object const& _object,
 		bool _optimizeStackAllocation
 	);
-	std::map<YulString, std::set<YulString>> unreachableVariables;
+	std::map<YulString, std::vector<YulString>> unreachableVariables;
 	std::map<YulString, int> stackDeficit;
 };
 

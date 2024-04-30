@@ -82,11 +82,14 @@ unsigned Assembly::codeSize(unsigned subTagSize) const
 
 void Assembly::importAssemblyItemsFromJSON(Json::Value const& _code, std::vector<std::string> const& _sourceList)
 {
-	solAssert(m_items.empty());
+	solAssert(m_codeSections.empty());
+	solAssert(m_codeSections[0].items.empty());
+	m_codeSections.resize(1);
+	// TODO: Add support for EOF and more than one code sections.
 	solRequire(_code.isArray(), AssemblyImportException, "Supplied JSON is not an array.");
 	for (auto jsonItemIter = std::begin(_code); jsonItemIter != std::end(_code); ++jsonItemIter)
 	{
-		AssemblyItem const& newItem = m_items.emplace_back(createAssemblyItemFromJSON(*jsonItemIter, _sourceList));
+		AssemblyItem const& newItem = m_codeSections[0].items.emplace_back(createAssemblyItemFromJSON(*jsonItemIter, _sourceList));
 		if (newItem == Instruction::JUMPDEST)
 			solThrow(AssemblyImportException, "JUMPDEST instruction without a tag");
 		else if (newItem.type() == AssemblyItemType::Tag)
@@ -534,7 +537,7 @@ std::pair<std::shared_ptr<Assembly>, std::vector<std::string>> Assembly::fromJSO
 			"Member 'sourceList' may only be present in the root JSON object."
 		);
 
-	auto result = std::make_shared<Assembly>(EVMVersion{}, _level == 0 /* _creation */, "" /* _name */);
+	auto result = std::make_shared<Assembly>(EVMVersion{}, _level == 0 /* _creation */, std::nullopt, "" /* _name */);
 	std::vector<std::string> parsedSourceList;
 	if (_json.isMember("sourceList"))
 	{
@@ -769,19 +772,23 @@ std::map<u256, u256> const& Assembly::optimiseInternal(
 				BlockDeduplicator deduplicator{section.items};
 				if (deduplicator.deduplicate())
 				{
-					assertThrow(
-						replacement.first <= std::numeric_limits<size_t>::max() && replacement.second <= std::numeric_limits<size_t>::max(),
-						OptimizerException,
-						"Invalid tag replacement."
-					);
-					assertThrow(
-						!tagReplacements.count(replacement.first),
-						OptimizerException,
-						"Replacement already known."
-					);
-					tagReplacements[replacement.first] = replacement.second;
-					if (_tagsReferencedFromOutside.erase(static_cast<size_t>(replacement.first)))
-						_tagsReferencedFromOutside.insert(static_cast<size_t>(replacement.second));
+					for (auto const& replacement: deduplicator.replacedTags())
+					{
+						assertThrow(
+							replacement.first <= std::numeric_limits<size_t>::max() && replacement.second <= std::numeric_limits<size_t>::max(),
+							OptimizerException,
+							"Invalid tag replacement."
+						);
+						assertThrow(
+							!tagReplacements.count(replacement.first),
+							OptimizerException,
+							"Replacement already known."
+						);
+						tagReplacements[replacement.first] = replacement.second;
+						if (_tagsReferencedFromOutside.erase(static_cast<size_t>(replacement.first)))
+							_tagsReferencedFromOutside.insert(static_cast<size_t>(replacement.second));
+					}
+					count++;
 				}
 			}
 
@@ -853,7 +860,7 @@ std::map<u256, u256> const& Assembly::optimiseInternal(
 
 namespace
 {
-uint16_t calcMaxStackHeight(vector<AssemblyItem> const& _items, uint16_t _args)
+uint16_t calcMaxStackHeight(std::vector<AssemblyItem> const& _items, uint16_t _args)
 {
 	uint16_t maxStackHeight = 0;
 	std::stack<size_t> worklist;
@@ -964,26 +971,27 @@ LinkerObject const& Assembly::assemble() const
 		"Expected the first code section to have zero inputs and outputs."
 	);
     
-	unsigned bytesRequiredForCode = codeSize(static_cast<unsigned>(subTagSize));
-	m_tagPositionsInBytecode = std::vector<size_t>(m_usedTags, std::numeric_limits<size_t>::max());
-	std::map<size_t, std::pair<size_t, size_t>> tagRef;
-	std::multimap<h256, unsigned> dataRef;
-	std::multimap<size_t, size_t> subRef;
-	std::vector<unsigned> sizeRef; ///< Pointers to code locations where the size of the program is inserted
-	unsigned bytesPerTag = numberEncodingSize(bytesRequiredForCode);
-	// Adjust bytesPerTag for references to sub assemblies.
-	for (AssemblyItem const& i: m_items)
-		if (i.type() == PushTag)
-		{
-			auto [subId, tagId] = i.splitForeignPushTag();
-			if (subId == std::numeric_limits<size_t>::max())
-				continue;
-			assertThrow(subId < m_subs.size(), AssemblyException, "Invalid sub id");
-			auto subTagPosition = m_subs[subId]->m_tagPositionsInBytecode.at(tagId);
-			assertThrow(subTagPosition != std::numeric_limits<size_t>::max(), AssemblyException, "Reference to tag without position.");
-			bytesPerTag = std::max(bytesPerTag, numberEncodingSize(subTagPosition));
-		}
-	uint8_t tagPush = static_cast<uint8_t>(pushInstruction(bytesPerTag));
+//	unsigned bytesRequiredForCode = codeSize(static_cast<unsigned>(subTagSize));
+//	m_tagPositionsInBytecode = std::vector<size_t>(m_usedTags, std::numeric_limits<size_t>::max());
+//	std::map<size_t, std::pair<size_t, size_t>> tagRef;
+//	std::multimap<h256, unsigned> dataRef;
+//	std::multimap<size_t, size_t> subRef;
+//	std::vector<unsigned> sizeRef; ///< Pointers to code locations where the size of the program is inserted
+//	unsigned bytesPerTag = numberEncodingSize(bytesRequiredForCode);
+//	// Adjust bytesPerTag for references to sub assemblies.
+//	for (auto&& codeSection: m_codeSections)
+//		for (AssemblyItem const& i: codeSection.items)
+//			if (i.type() == PushTag)
+//			{
+//				auto [subId, tagId] = i.splitForeignPushTag();
+//				if (subId == std::numeric_limits<size_t>::max())
+//					continue;
+//				assertThrow(subId < m_subs.size(), AssemblyException, "Invalid sub id");
+//				auto subTagPosition = m_subs[subId]->m_tagPositionsInBytecode.at(tagId);
+//				assertThrow(subTagPosition != std::numeric_limits<size_t>::max(), AssemblyException, "Reference to tag without position.");
+//				bytesPerTag = std::max(bytesPerTag, numberEncodingSize(subTagPosition));
+//			}
+//	uint8_t tagPush = static_cast<uint8_t>(pushInstruction(bytesPerTag));
     
 	// TODO: assert zero inputs/outputs on code section zero
 	// TODO: assert one code section being present and *only* one being present unless EOF
@@ -1013,7 +1021,7 @@ LinkerObject const& Assembly::assemble() const
 		assertThrow(_value <= 0xFFFF, AssemblyException, "");
 		appendBigEndian(_dest, 2, static_cast<size_t>(_value));
 	};
-	vector<size_t> codeSectionSizeOffsets;
+	std::vector<size_t> codeSectionSizeOffsets;
 	auto setCodeSectionSize = [&](size_t _section, size_t _size) {
 		if (eof)
 			toBigEndian(_size, bytesRef(ret.bytecode.data() + codeSectionSizeOffsets.at(_section), 2));
@@ -1063,17 +1071,17 @@ LinkerObject const& Assembly::assemble() const
 
 	unsigned headerSize = static_cast<unsigned>(ret.bytecode.size());
 	unsigned bytesRequiredForCode = codeSize(static_cast<unsigned>(subTagSize));
-	m_tagPositionsInBytecode = vector<size_t>(m_usedTags, numeric_limits<size_t>::max());
+	m_tagPositionsInBytecode = std::vector<size_t>(m_usedTags, std::numeric_limits<size_t>::max());
 	struct TagRef
 	{
 		size_t subId = 0;
 		size_t tagId = 0;
 		bool isRelative = 0;
 	};
-	map<size_t, TagRef> tagRef;
-	multimap<h256, unsigned> dataRef;
-	multimap<size_t, size_t> subRef;
-	vector<unsigned> sizeRef; ///< Pointers to code locations where the size of the program is inserted
+	std::map<size_t, TagRef> tagRef;
+	std::multimap<h256, unsigned> dataRef;
+	std::multimap<size_t, size_t> subRef;
+	std::vector<unsigned> sizeRef; ///< Pointers to code locations where the size of the program is inserted
 	unsigned bytesPerTag = numberEncodingSize(headerSize + bytesRequiredForCode + bytesRequiredForDataUpperBound);
 	uint8_t tagPush = static_cast<uint8_t>(pushInstruction(bytesPerTag));
 
@@ -1092,254 +1100,159 @@ LinkerObject const& Assembly::assemble() const
 
 	for (auto&& [codeSectionIndex, codeSection]: m_codeSections | ranges::views::enumerate)
 	{
-		// store position of the invalid jump destination
-		if (i.type() != Tag && m_tagPositionsInBytecode[0] == std::numeric_limits<size_t>::max())
-			m_tagPositionsInBytecode[0] = ret.bytecode.size();
+		auto const sectionStart = ret.bytecode.size();
 
 		for (AssemblyItem const& i: codeSection.items)
 		{
-		case Operation:
-			ret.bytecode.push_back(static_cast<uint8_t>(i.instruction()));
-			break;
-		case Push:
-		{
-			unsigned b = numberEncodingSize(i.data());
-			if (b == 0 && !m_evmVersion.hasPush0())
+			// store position of the invalid jump destination
+			if (i.type() != Tag && m_tagPositionsInBytecode[0] == std::numeric_limits<size_t>::max())
+				m_tagPositionsInBytecode[0] = ret.bytecode.size();
+
+			switch (i.type())
 			{
-				b = 1;
-			}
-			ret.bytecode.push_back(static_cast<uint8_t>(pushInstruction(b)));
-			if (b > 0)
-			{
-				ret.bytecode.resize(ret.bytecode.size() + b);
-				bytesRef byr(&ret.bytecode.back() + 1 - b, b);
-				toBigEndian(i.data(), byr);
-			}
-			break;
-		}
-		case PushTag:
-		{
-			ret.bytecode.push_back(tagPush);
-			tagRef[ret.bytecode.size()] = i.splitForeignPushTag();
-			ret.bytecode.resize(ret.bytecode.size() + bytesPerTag);
-			break;
-		}
-		case PushData:
-			ret.bytecode.push_back(dataRefPush);
-			dataRef.insert(std::make_pair(h256(i.data()), ret.bytecode.size()));
-			ret.bytecode.resize(ret.bytecode.size() + bytesPerDataRef);
-			break;
-		case PushSub:
-			assertThrow(i.data() <= std::numeric_limits<size_t>::max(), AssemblyException, "");
-			ret.bytecode.push_back(dataRefPush);
-			subRef.insert(std::make_pair(static_cast<size_t>(i.data()), ret.bytecode.size()));
-			ret.bytecode.resize(ret.bytecode.size() + bytesPerDataRef);
-			break;
-		case PushSubSize:
-		{
-			assertThrow(i.data() <= std::numeric_limits<size_t>::max(), AssemblyException, "");
-			auto s = subAssemblyById(static_cast<size_t>(i.data()))->assemble().bytecode.size();
-			i.setPushedValue(u256(s));
-			unsigned b = std::max<unsigned>(1, numberEncodingSize(s));
-			ret.bytecode.push_back(static_cast<uint8_t>(pushInstruction(b)));
-			ret.bytecode.resize(ret.bytecode.size() + b);
-			bytesRef byr(&ret.bytecode.back() + 1 - b, b);
-			toBigEndian(s, byr);
-			break;
-		}
-		case PushProgramSize:
-		{
-			ret.bytecode.push_back(dataRefPush);
-			sizeRef.push_back(static_cast<unsigned>(ret.bytecode.size()));
-			ret.bytecode.resize(ret.bytecode.size() + bytesPerDataRef);
-			break;
-		}
-		case PushLibraryAddress:
-			ret.bytecode.push_back(static_cast<uint8_t>(Instruction::PUSH20));
-			ret.linkReferences[ret.bytecode.size()] = m_libraries.at(i.data());
-			ret.bytecode.resize(ret.bytecode.size() + 20);
-			break;
-		case PushImmutable:
-			ret.bytecode.push_back(static_cast<uint8_t>(Instruction::PUSH32));
-			// Maps keccak back to the "identifier" std::string of that immutable.
-			ret.immutableReferences[i.data()].first = m_immutables.at(i.data());
-			// Record the bytecode offset of the PUSH32 argument.
-			ret.immutableReferences[i.data()].second.emplace_back(ret.bytecode.size());
-			// Advance bytecode by 32 bytes (default initialized).
-			ret.bytecode.resize(ret.bytecode.size() + 32);
-			break;
-		case VerbatimBytecode:
-			ret.bytecode += i.verbatimData();
-			break;
-		case AssignImmutable:
-		{
-			// Expect 2 elements on stack (source, dest_base)
-			auto const& offsets = immutableReferencesBySub[i.data()].second;
-			for (size_t i = 0; i < offsets.size(); ++i)
-			{
-			case Operation:
-				ret.bytecode.push_back(static_cast<uint8_t>(i.instruction()));
-				break;
-			case Push:
-			{
-				unsigned b = max<unsigned>(1, numberEncodingSize(i.data()));
-				ret.bytecode.push_back(static_cast<uint8_t>(pushInstruction(b)));
-				appendBigEndian(ret.bytecode, b, i.data());
-				break;
-			}
-			case PushTag:
-			{
-				assertThrow(!eof, AssemblyException, "Push tag in EOF code");
-				ret.bytecode.push_back(tagPush);
-				auto [subId, tagId] = i.splitForeignPushTag();
-				tagRef[ret.bytecode.size()] = TagRef{subId, tagId, false};
-				ret.bytecode.resize(ret.bytecode.size() + bytesPerTag);
-				break;
-			}
-			case PushData:
-				ret.bytecode.push_back(dataRefPush);
-				dataRef.insert(make_pair(h256(i.data()), ret.bytecode.size()));
-				ret.bytecode.resize(ret.bytecode.size() + bytesPerDataRef);
-				break;
-			case PushSub:
-				assertThrow(i.data() <= numeric_limits<size_t>::max(), AssemblyException, "");
-				ret.bytecode.push_back(dataRefPush);
-				subRef.insert(make_pair(static_cast<size_t>(i.data()), ret.bytecode.size()));
-				ret.bytecode.resize(ret.bytecode.size() + bytesPerDataRef);
-				break;
-			case PushSubSize:
-			{
-				assertThrow(i.data() <= numeric_limits<size_t>::max(), AssemblyException, "");
-				auto s = subAssemblyById(static_cast<size_t>(i.data()))->assemble().bytecode.size();
-				i.setPushedValue(u256(s));
-				unsigned b = max<unsigned>(1, numberEncodingSize(s));
-				ret.bytecode.push_back(static_cast<uint8_t>(pushInstruction(b)));
-				appendBigEndian(ret.bytecode, b, s);
-				break;
-			}
-			case PushProgramSize:
-			{
-				ret.bytecode.push_back(dataRefPush);
-				sizeRef.push_back(static_cast<unsigned>(ret.bytecode.size()));
-				ret.bytecode.resize(ret.bytecode.size() + bytesPerDataRef);
-				break;
-			}
-			case PushLibraryAddress:
-				ret.bytecode.push_back(static_cast<uint8_t>(Instruction::PUSH20));
-				ret.linkReferences[ret.bytecode.size()] = m_libraries.at(i.data());
-				ret.bytecode.resize(ret.bytecode.size() + 20);
-				break;
-			case PushImmutable:
-				ret.bytecode.push_back(static_cast<uint8_t>(Instruction::PUSH32));
-				// Maps keccak back to the "identifier" string of that immutable.
-				ret.immutableReferences[i.data()].first = m_immutables.at(i.data());
-				// Record the bytecode offset of the PUSH32 argument.
-				ret.immutableReferences[i.data()].second.emplace_back(ret.bytecode.size());
-				// Advance bytecode by 32 bytes (default initialized).
-				ret.bytecode.resize(ret.bytecode.size() + 32);
-				break;
-			case VerbatimBytecode:
-				ret.bytecode += i.verbatimData();
-				break;
-			case AssignImmutable:
-			{
-				// Expect 2 elements on stack (source, dest_base)
-				auto const& offsets = immutableReferencesBySub[i.data()].second;
-				for (auto [j, offset]: offsets | ranges::views::enumerate)
+				case Operation:
+					ret.bytecode.push_back(static_cast<uint8_t>(i.instruction()));
+					break;
+				case Push:
 				{
-					if (j != offsets.size() - 1)
+					unsigned b = numberEncodingSize(i.data());
+					if (b == 0 && !m_evmVersion.hasPush0())
 					{
-						ret.bytecode.push_back(uint8_t(Instruction::DUP2));
-						ret.bytecode.push_back(uint8_t(Instruction::DUP2));
+						b = 1;
 					}
-					// TODO: should we make use of the constant optimizer methods for pushing the offsets?
-					bytes offsetBytes = toCompactBigEndian(u256(offset));
-					ret.bytecode.push_back(static_cast<uint8_t>(pushInstruction(static_cast<unsigned>(offsetBytes.size()))));
-					ret.bytecode += offsetBytes;
-					ret.bytecode.push_back(uint8_t(Instruction::ADD));
-					ret.bytecode.push_back(uint8_t(Instruction::MSTORE));
+					ret.bytecode.push_back(static_cast<uint8_t>(pushInstruction(b)));
+					if (b > 0)
+					{
+						ret.bytecode.resize(ret.bytecode.size() + b);
+						bytesRef byr(&ret.bytecode.back() + 1 - b, b);
+						toBigEndian(i.data(), byr);
+					}
+					break;
 				}
-				if (offsets.empty())
+				case PushTag:
 				{
-					ret.bytecode.push_back(uint8_t(Instruction::POP));
-					ret.bytecode.push_back(uint8_t(Instruction::POP));
+					assertThrow(!eof, AssemblyException, "Push tag in EOF code");
+					ret.bytecode.push_back(tagPush);
+					auto [subId, tagId] = i.splitForeignPushTag();
+					tagRef[ret.bytecode.size()] = TagRef{subId, tagId, false};
+					ret.bytecode.resize(ret.bytecode.size() + bytesPerTag);
+					break;
 				}
-				immutableReferencesBySub.erase(i.data());
-				break;
+				case PushData:
+					ret.bytecode.push_back(dataRefPush);
+					dataRef.insert(std::make_pair(h256(i.data()), ret.bytecode.size()));
+					ret.bytecode.resize(ret.bytecode.size() + bytesPerDataRef);
+					break;
+				case PushSub:
+					assertThrow(i.data() <= std::numeric_limits<size_t>::max(), AssemblyException, "");
+					ret.bytecode.push_back(dataRefPush);
+					subRef.insert(std::make_pair(static_cast<size_t>(i.data()), ret.bytecode.size()));
+					ret.bytecode.resize(ret.bytecode.size() + bytesPerDataRef);
+					break;
+				case PushSubSize:
+				{
+					assertThrow(i.data() <= std::numeric_limits<size_t>::max(), AssemblyException, "");
+					auto s = subAssemblyById(static_cast<size_t>(i.data()))->assemble().bytecode.size();
+					i.setPushedValue(u256(s));
+					unsigned b = std::max<unsigned>(1, numberEncodingSize(s));
+					ret.bytecode.push_back(static_cast<uint8_t>(pushInstruction(b)));
+					ret.bytecode.resize(ret.bytecode.size() + b);
+					bytesRef byr(&ret.bytecode.back() + 1 - b, b);
+					toBigEndian(s, byr);
+					break;
+				}
+				case PushProgramSize:
+				{
+					ret.bytecode.push_back(dataRefPush);
+					sizeRef.push_back(static_cast<unsigned>(ret.bytecode.size()));
+					ret.bytecode.resize(ret.bytecode.size() + bytesPerDataRef);
+					break;
+				}
+				case PushLibraryAddress:
+					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::PUSH20));
+					ret.linkReferences[ret.bytecode.size()] = m_libraries.at(i.data());
+					ret.bytecode.resize(ret.bytecode.size() + 20);
+					break;
+				case PushImmutable:
+					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::PUSH32));
+					// Maps keccak back to the "identifier" std::string of that immutable.
+					ret.immutableReferences[i.data()].first = m_immutables.at(i.data());
+					// Record the bytecode offset of the PUSH32 argument.
+					ret.immutableReferences[i.data()].second.emplace_back(ret.bytecode.size());
+					// Advance bytecode by 32 bytes (default initialized).
+					ret.bytecode.resize(ret.bytecode.size() + 32);
+					break;
+				case VerbatimBytecode:
+					ret.bytecode += i.verbatimData();
+					break;
+				case AssignImmutable:
+				{
+					// Expect 2 elements on stack (source, dest_base)
+					auto const& offsets = immutableReferencesBySub[i.data()].second;
+					for (auto [j, offset]: offsets | ranges::views::enumerate)
+					{
+						if (j != offsets.size() - 1)
+						{
+							ret.bytecode.push_back(uint8_t(Instruction::DUP2));
+							ret.bytecode.push_back(uint8_t(Instruction::DUP2));
+						}
+						// TODO: should we make use of the constant optimizer methods for pushing the offsets?
+						bytes offsetBytes = toCompactBigEndian(u256(offset));
+						ret.bytecode.push_back(static_cast<uint8_t>(pushInstruction(static_cast<unsigned>(offsetBytes.size()))));
+						ret.bytecode += offsetBytes;
+						ret.bytecode.push_back(uint8_t(Instruction::ADD));
+						ret.bytecode.push_back(uint8_t(Instruction::MSTORE));
+					}
+					if (offsets.empty())
+					{
+						ret.bytecode.push_back(uint8_t(Instruction::POP));
+						ret.bytecode.push_back(uint8_t(Instruction::POP));
+					}
+					immutableReferencesBySub.erase(i.data());
+					break;
+				}
+				case PushDeployTimeAddress:
+					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::PUSH20));
+					ret.bytecode.resize(ret.bytecode.size() + 20);
+					break;
+				case Tag:
+				{
+					assertThrow(i.data() != 0, AssemblyException, "Invalid tag position.");
+					assertThrow(i.splitForeignPushTag().first == std::numeric_limits<size_t>::max(), AssemblyException, "Foreign tag.");
+					size_t tagId = static_cast<size_t>(i.data());
+					assertThrow(ret.bytecode.size() < 0xffffffffL, AssemblyException, "Tag too large.");
+					assertThrow(m_tagPositionsInBytecode[tagId] == std::numeric_limits<size_t>::max(), AssemblyException, "Duplicate tag position.");
+					m_tagPositionsInBytecode[tagId] = ret.bytecode.size();
+					if (!eof)
+						ret.bytecode.push_back(static_cast<uint8_t>(Instruction::JUMPDEST));
+					break;
+				}
+				case CallF:
+				{
+					assertThrow(eof, AssemblyException, "Function call (CALLF) in non-EOF code");
+					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::CALLF));
+					appendBigEndianUint16(ret.bytecode, i.data());
+					break;
+				}
+				case RetF:
+				{
+					assertThrow(eof, AssemblyException, "Function return (RETF) in non-EOF code");
+					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::RETF));
+					break;
+				}
+				case RelativeJump:
+				case ConditionalRelativeJump:
+				{
+					assertThrow(eof, AssemblyException, "Relative jump in non-EOF code");
+					ret.bytecode.push_back(static_cast<uint8_t>(i.type() == RelativeJump ? Instruction::RJUMP : Instruction::RJUMPI));
+					auto [subId, tagId] = i.splitForeignPushTag();
+					tagRef[ret.bytecode.size()] = TagRef{subId, tagId, true};
+					appendBigEndianUint16(ret.bytecode, 0u);
+					break;
+				}
+				default:
+					assertThrow(false, InvalidOpcode, "Unexpected opcode while assembling.");
 			}
-			case PushDeployTimeAddress:
-				ret.bytecode.push_back(static_cast<uint8_t>(Instruction::PUSH20));
-				ret.bytecode.resize(ret.bytecode.size() + 20);
-				break;
-			case Tag:
-			{
-				assertThrow(i.data() != 0, AssemblyException, "Invalid tag position.");
-				assertThrow(i.splitForeignPushTag().first == numeric_limits<size_t>::max(), AssemblyException, "Foreign tag.");
-				size_t tagId = static_cast<size_t>(i.data());
-				assertThrow(ret.bytecode.size() < 0xffffffffL, AssemblyException, "Tag too large.");
-				assertThrow(m_tagPositionsInBytecode[tagId] == numeric_limits<size_t>::max(), AssemblyException, "Duplicate tag position.");
-				m_tagPositionsInBytecode[tagId] = ret.bytecode.size();
-				if (!eof)
-					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::JUMPDEST));
-				break;
-			}
-			case CallF:
-			{
-				assertThrow(eof, AssemblyException, "Function call (CALLF) in non-EOF code");
-				ret.bytecode.push_back(static_cast<uint8_t>(Instruction::CALLF));
-				appendBigEndianUint16(ret.bytecode, i.data());
-				break;
-			}
-			case RetF:
-			{
-				assertThrow(eof, AssemblyException, "Function return (RETF) in non-EOF code");
-				ret.bytecode.push_back(static_cast<uint8_t>(Instruction::RETF));
-				break;
-			}
-			case RelativeJump:
-			case ConditionalRelativeJump:
-			{
-				assertThrow(eof, AssemblyException, "Relative jump in non-EOF code");
-				ret.bytecode.push_back(static_cast<uint8_t>(i.type() == RelativeJump ? Instruction::RJUMP : Instruction::RJUMPI));
-				auto [subId, tagId] = i.splitForeignPushTag();
-				tagRef[ret.bytecode.size()] = TagRef{subId, tagId, true};
-				appendBigEndianUint16(ret.bytecode, 0u);
-				break;
-			}
-			default:
-				assertThrow(false, InvalidOpcode, "Unexpected opcode while assembling.");
-			}
-		}
-		case PushDeployTimeAddress:
-			ret.bytecode.push_back(static_cast<uint8_t>(Instruction::PUSH20));
-			ret.bytecode.resize(ret.bytecode.size() + 20);
-			break;
-		case Tag:
-		{
-			assertThrow(i.data() != 0, AssemblyException, "Invalid tag position.");
-			assertThrow(i.splitForeignPushTag().first == std::numeric_limits<size_t>::max(), AssemblyException, "Foreign tag.");
-			size_t tagId = static_cast<size_t>(i.data());
-			assertThrow(ret.bytecode.size() < 0xffffffffL, AssemblyException, "Tag too large.");
-			assertThrow(m_tagPositionsInBytecode[tagId] == numeric_limits<size_t>::max(), AssemblyException, "Duplicate tag position.");
-			m_tagPositionsInBytecode[tagId] = ret.bytecode.size() - codeStart;
-			ret.bytecode.push_back(static_cast<uint8_t>(Instruction::JUMPDEST));
-			break;
-		}
-		case CallF:
-		{
-			ret.bytecode.push_back(static_cast<uint8_t>(Instruction::CALLF));
-			ret.bytecode.resize(ret.bytecode.size() + 2);
-			bytesRef byr(&ret.bytecode.back() + 1 - 2, 2);
-			toBigEndian(i.data(), byr);
-			break;
-		}
-		case RetF:
-		{
-			ret.bytecode.push_back(static_cast<uint8_t>(Instruction::RETF));
-			break;
-		}
-		default:
-			assertThrow(false, InvalidOpcode, "Unexpected opcode while assembling.");
 		}
 
 		auto sectionEnd = ret.bytecode.size();
@@ -1380,11 +1293,11 @@ LinkerObject const& Assembly::assemble() const
 		for (auto const& ref: subObject.linkReferences)
 			ret.linkReferences[ref.first + subAssemblyOffsets[subObject]] = ref.second;
 	}
-	for (auto const& i: tagRef)
+	for (auto const& [bytecodeOffset, ref]: tagRef)
 	{
-		size_t subId;
-		size_t tagId;
-		std::tie(subId, tagId) = i.second;
+		size_t subId = ref.subId;
+		size_t tagId = ref.tagId;
+		bool relative = ref.isRelative;
 		assertThrow(subId == std::numeric_limits<size_t>::max() || subId < m_subs.size(), AssemblyException, "Invalid sub id");
 		std::vector<size_t> const& tagPositions =
 			subId == std::numeric_limits<size_t>::max() ?
@@ -1397,7 +1310,7 @@ LinkerObject const& Assembly::assemble() const
 		if (relative)
 		{
 			assertThrow(m_eofVersion.has_value(), AssemblyException, "Relative jump outside EOF");
-			assertThrow(subId == numeric_limits<size_t>::max(), AssemblyException, "Relative jump to sub");
+			assertThrow(subId == std::numeric_limits<size_t>::max(), AssemblyException, "Relative jump to sub");
 			assertThrow(
 				static_cast<ptrdiff_t>(pos) - static_cast<ptrdiff_t>(bytecodeOffset + 2u) < 0x7FFF &&
 				static_cast<ptrdiff_t>(pos) - static_cast<ptrdiff_t>(bytecodeOffset + 2u) >= -0x8000,
@@ -1451,7 +1364,7 @@ LinkerObject const& Assembly::assemble() const
 	assertThrow(
 		bytesRequiredForDataAndSubsUpperBound >= dataLength,
 		AssemblyException,
-		"More data than expected. " + to_string(dataLength) + " > " + to_string(bytesRequiredForDataUpperBound)
+		"More data than expected. " + std::to_string(dataLength) + " > " + std::to_string(bytesRequiredForDataUpperBound)
 	);
 	setDataSectionSize(dataLength);
 

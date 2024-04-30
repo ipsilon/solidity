@@ -232,7 +232,7 @@ size_t AssemblyItem::returnValues() const
 	case Tag:
 		return 0;
 	case VerbatimBytecode:
-		return get<1>(*m_verbatimBytecode);
+		return std::get<1>(*m_verbatimBytecode);
 	case CallF:
 		assertThrow(m_functionSignature.has_value(), AssemblyException, "");
 		return std::get<1>(*m_functionSignature);
@@ -363,16 +363,16 @@ std::string AssemblyItem::toAssemblyText(Assembly const& _assembly) const
 		text = std::string("verbatimbytecode_") + util::toHex(std::get<2>(*m_verbatimBytecode));
 		break;
 	case CallF:
-		text = "callf(" +  to_string(static_cast<size_t>(data())) + ")";
+		text = "callf(" +  std::to_string(static_cast<size_t>(data())) + ")";
 		break;
 	case RetF:
 		text = "retf";
 		break;
 	case RelativeJump:
-		text = "rjump(" + string("tag_") + to_string(static_cast<size_t>(data())) + ")";
+		text = "rjump(" + std::string("tag_") + std::to_string(static_cast<size_t>(data())) + ")";
 		break;
 	case ConditionalRelativeJump:
-		text = "rjumpi(" + string("tag_") + to_string(static_cast<size_t>(data())) + ")";
+		text = "rjumpi(" + std::string("tag_") + std::to_string(static_cast<size_t>(data())) + ")";
 		break;
 	default:
 		assertThrow(false, InvalidOpcode, "");
@@ -402,7 +402,7 @@ std::ostream& solidity::evmasm::operator<<(std::ostream& _out, AssemblyItem cons
 		_out << " PUSH " << std::hex << _item.data() <<  std::dec;
 		break;
 	case CallF:
-		_out << " CALLF " << dec << _item.data();
+		_out << " CALLF " << std::dec << _item.data();
 		break;
 	case RetF:
 		_out << " RETF";
@@ -419,7 +419,7 @@ std::ostream& solidity::evmasm::operator<<(std::ostream& _out, AssemblyItem cons
 	case RelativeJump:
 	{
 		size_t subId = _item.splitForeignPushTag().first;
-		if (subId == numeric_limits<size_t>::max())
+		if (subId == std::numeric_limits<size_t>::max())
 			_out << " RelativeJump " << _item.splitForeignPushTag().second;
 		else
 			_out << " RelativeJump " << subId << ":" << _item.splitForeignPushTag().second;
@@ -428,7 +428,7 @@ std::ostream& solidity::evmasm::operator<<(std::ostream& _out, AssemblyItem cons
 	case ConditionalRelativeJump:
 	{
 		size_t subId = _item.splitForeignPushTag().first;
-		if (subId == numeric_limits<size_t>::max())
+		if (subId == std::numeric_limits<size_t>::max())
 			_out << " ConditionalRelativeJump " << _item.splitForeignPushTag().second;
 		else
 			_out << " ConditionalRelativeJump " << subId << ":" << _item.splitForeignPushTag().second;

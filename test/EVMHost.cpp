@@ -44,6 +44,7 @@ evmc::VM& EVMHost::getVM(std::string const& _path)
 	{
 		evmc_loader_error_code errorCode = {};
 		auto vm = evmc::VM{evmc_load_and_configure(_path.c_str(), &errorCode)};
+		// vm.set_option("trace", "1");
 		if (vm && errorCode == EVMC_LOADER_SUCCESS)
 		{
 			if (vm.get_capabilities() & (EVMC_CAPABILITY_EVM1))
@@ -392,7 +393,12 @@ evmc::Result EVMHost::call(evmc_message const& _message) noexcept
 		message.input_data = nullptr;
 		message.input_size = 0;
 	}
-	evmc::Result result = m_vm.execute(*this, m_evmRevision, message, code.data(), code.size());
+
+	auto rev = m_evmRevision;
+	if (rev == EVMC_SHANGHAI)
+		rev = EVMC_CANCUN;
+
+	evmc::Result result = m_vm.execute(*this, rev, message, code.data(), code.size());
 
 	if (message.kind == EVMC_CREATE || message.kind == EVMC_CREATE2)
 	{

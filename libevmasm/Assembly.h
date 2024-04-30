@@ -49,7 +49,6 @@ using AssemblyPointer = std::shared_ptr<Assembly>;
 class Assembly
 {
 public:
-	Assembly(langutil::EVMVersion _evmVersion, bool _creation, std::optional<uint8_t> _eofVersion, std::string _name): m_evmVersion(_evmVersion), m_creation(_creation), m_eofVersion(_eofVersion), m_name(std::move(_name)) { }
 	Assembly(langutil::EVMVersion _evmVersion, bool _creation, std::optional<uint8_t> _eofVersion, std::string _name):
     m_evmVersion(_evmVersion),
 	m_creation(_creation),
