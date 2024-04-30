@@ -42,7 +42,7 @@ std::string check(std::string const& _input)
 		obj,
 		true
 	).stackDeficit;
-	string out;
+	std::string out;
 	for (auto const& function: functions)
 		out += function.first.str() + ": " + std::to_string(function.second) + " ";
 	return out;

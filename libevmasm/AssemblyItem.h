@@ -91,23 +91,23 @@ public:
 		m_verbatimBytecode{{_arguments, _returnVariables, std::move(_verbatimData)}},
 		m_debugData{langutil::DebugData::create()}
 	{}
-	static AssemblyItem functionCall(uint16_t _functionID, uint8_t _args, uint8_t _rets, langutil::SourceLocation _location = langutil::SourceLocation())
+	static AssemblyItem functionCall(uint16_t _functionID, uint8_t _args, uint8_t _rets, langutil::DebugData::ConstPtr _debugData = langutil::DebugData::create())
 	{
-		AssemblyItem result(CallF, _functionID, _location);
+		AssemblyItem result(CallF, _functionID, _debugData);
 		result.m_functionSignature = std::make_tuple(_args, _rets);
 		return result;
 	}
-	static AssemblyItem functionReturn(uint8_t _rets, langutil::SourceLocation _location = langutil::SourceLocation())
+	static AssemblyItem functionReturn(uint8_t _rets, langutil::DebugData::ConstPtr _debugData = langutil::DebugData::create())
 	{
-		return AssemblyItem(RetF, _rets, _location);
+		return AssemblyItem(RetF, _rets, _debugData);
 	}
-	static AssemblyItem jumpTo(AssemblyItem _tag, langutil::SourceLocation _location = langutil::SourceLocation())
+	static AssemblyItem jumpTo(AssemblyItem _tag, langutil::DebugData::ConstPtr _debugData = langutil::DebugData::create())
 	{
-		return AssemblyItem(RelativeJump, _tag.data(), _location);
+		return AssemblyItem(RelativeJump, _tag.data(), _debugData);
 	}
-	static AssemblyItem conditionalJumpTo(AssemblyItem _tag, langutil::SourceLocation _location = langutil::SourceLocation())
+	static AssemblyItem conditionalJumpTo(AssemblyItem _tag, langutil::DebugData::ConstPtr _debugData = langutil::DebugData::create())
 	{
-		return AssemblyItem(ConditionalRelativeJump, _tag.data(), _location);
+		return AssemblyItem(ConditionalRelativeJump, _tag.data(), _debugData);
 	}
 
 	AssemblyItem(AssemblyItem const&) = default;

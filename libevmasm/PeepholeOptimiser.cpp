@@ -382,7 +382,7 @@ struct EqIsZeroRJumpI: SimplePeepholeOptimizerMethod<EqIsZeroRJumpI>
 			_rjumpi.type() == ConditionalRelativeJump
 		)
 		{
-			*_out = AssemblyItem(Instruction::SUB, _eq.location());
+			*_out = AssemblyItem(Instruction::SUB, _eq.debugData());
 			*_out = _rjumpi;
 			return true;
 		}
@@ -440,8 +440,8 @@ struct DoubleRJump: SimplePeepholeOptimizerMethod<DoubleRJump>
 			_rjumpi.data() == _tag1.data()
 		)
 		{
-			*_out = AssemblyItem(Instruction::ISZERO, _rjumpi.location());
-			*_out = AssemblyItem::conditionalJumpTo(_rjump.tag(), _rjump.location());
+			*_out = AssemblyItem(Instruction::ISZERO, _rjumpi.debugData());
+			*_out = AssemblyItem::conditionalJumpTo(_rjump.tag(), _rjump.debugData());
 			*_out = _tag1;
 			return true;
 		}
@@ -491,7 +491,7 @@ struct RJumpToNext: SimplePeepholeOptimizerMethod<RJumpToNext>
 		)
 		{
 			if (_rjump.type() == ConditionalRelativeJump)
-				*_out = AssemblyItem(Instruction::POP, _rjump.location());
+				*_out = AssemblyItem(Instruction::POP, _rjump.debugData());
 			*_out = _tag;
 			return true;
 		}

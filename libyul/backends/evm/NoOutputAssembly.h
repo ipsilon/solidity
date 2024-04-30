@@ -1,4 +1,4 @@
-langutil::EVMVersion _evmVersion, /*
+/*
 	This file is part of solidity.
 
 	solidity is free software: you can redistribute it and/or modify
@@ -52,7 +52,7 @@ struct NoOutputAssemblyContext
 class NoOutputAssembly: public AbstractAssembly
 {
 public:
-	explicit NoOutputAssembly(langutil::EVMVersion _evmVersion): m_evmVersion(_evmVersion), m_context(std::make_shared<NoOutputAssemblyContext>()) { }
+	explicit NoOutputAssembly(langutil::EVMVersion _evmVersion): m_context(std::make_shared<NoOutputAssemblyContext>()), m_evmVersion(_evmVersion) { }
 	~NoOutputAssembly() override = default;
 
 	void setSourceLocation(langutil::SourceLocation const&) override {}

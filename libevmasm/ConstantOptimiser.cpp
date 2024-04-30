@@ -40,11 +40,11 @@ unsigned ConstantOptimisationMethod::optimiseConstants(
 	{
 		AssemblyItems& _items = codeSection.items;
 
-		map<AssemblyItem, size_t> pushes;
+		std::map<AssemblyItem, size_t> pushes;
 		for (AssemblyItem const& item: _items)
 			if (item.type() == Push)
 				pushes[item]++;
-		map<u256, AssemblyItems> pendingReplacements;
+		std::map<u256, AssemblyItems> pendingReplacements;
 		for (auto it: pushes)
 		{
 			AssemblyItem const& item = it.first;

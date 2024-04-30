@@ -92,9 +92,6 @@ enum class Instruction: uint8_t
 	BLOBHASH = 0x49,          ///< get a versioned hash of one of the blobs associated with the transaction
 	BLOBBASEFEE = 0x4a,       ///< get the block's blob basefee
 
-	MCOPY = 0x5e,             ///< copy between memory areas
-	JUMPDEST,                 ///< set a potential jump destination
-
 	POP = 0x50,               ///< remove item from stack
 	MLOAD,                    ///< load word from memory
 	MSTORE,                   ///< save word to memory
@@ -107,9 +104,8 @@ enum class Instruction: uint8_t
 	MSIZE,                    ///< get the size of active memory
 	GAS,                      ///< get the amount of available gas
 	JUMPDEST,                 ///< set a potential jump destination
-	RJUMP,
-	RJUMPI,
-	RJUMPV,
+
+	MCOPY = 0x5e,             ///< copy between memory areas
 
 	TLOAD = 0x5c,             ///< load word from transient storage
 	TSTORE = 0x5d,            ///< save word to transient storage
@@ -183,17 +179,19 @@ enum class Instruction: uint8_t
 	SWAP15,                   ///< swaps the highest and 16th highest value on the stack
 	SWAP16,                   ///< swaps the highest and 17th highest value on the stack
 
-	CALLF = 0xb0,
-	RETF,
-	JUMPF,
+	LOG0 = 0xa0,              ///< Makes a log entry; no topics.
+	LOG1,                     ///< Makes a log entry; 1 topic.
+	LOG2,                     ///< Makes a log entry; 2 topics.
+	LOG3,                     ///< Makes a log entry; 3 topics.
+	LOG4,                     ///< Makes a log entry; 4 topics.
 
-	CREATE = 0xf0,		///< create a new account with associated code
-	CALL,				///< message-call into an account
-	CALLCODE,			///< message-call with another account's code only
-	RETURN,				///< halt execution returning output data
-	DELEGATECALL,		///< like CALLCODE but keeps caller's value and sender
-	CREATE2 = 0xf5,		///< create new account with associated code at address `sha3(0xff + sender + salt + init code) % 2**160`
-	STATICCALL = 0xfa,	///< like CALL but disallow state modifications
+	RJUMP = 0xe0,
+	RJUMPI = 0xe1,
+	RJUMPV = 0xe2,
+
+	CALLF = 0xe3,
+	RETF = 0xe4,
+	JUMPF = 0xe5,
 
 	CREATE = 0xf0,            ///< create a new account with associated code
 	CALL,                     ///< message-call into an account
