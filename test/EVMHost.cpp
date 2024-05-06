@@ -397,8 +397,8 @@ evmc::Result EVMHost::call(evmc_message const& _message) noexcept
 	}
 
 	auto rev = m_evmRevision;
-	if (rev == EVMC_SHANGHAI)
-		rev = EVMC_CANCUN;
+	if (rev == EVMC_CANCUN)
+		rev = EVMC_PRAGUE;
 
 	evmc::Result result = m_vm.execute(*this, rev, message, code.data(), code.size());
 
