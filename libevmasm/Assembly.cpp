@@ -1055,7 +1055,7 @@ LinkerObject const& Assembly::assemble() const
 			appendBigEndianUint16(ret.bytecode, 0u); // placeholder for length of code
 		}
 
-		ret.bytecode.push_back(0x03); // kind=data
+		ret.bytecode.push_back(0x04); // kind=data
 		dataSectionSizeOffset = ret.bytecode.size();
 		appendBigEndianUint16(ret.bytecode, 0u); // length of data
 
