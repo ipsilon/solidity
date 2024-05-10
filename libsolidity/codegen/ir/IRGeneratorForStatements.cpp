@@ -1565,12 +1565,14 @@ void IRGeneratorForStatements::endVisit(FunctionCall const& _functionCall)
 				<dataSectionSize> := add(<dataSectionSize>, <argSize>)
 				if gt(<dataSectionSize>, 0xFFFF) { <panic>() }
 				mstore(<dataSectionOffset>, or(shr(16, shl(16, <tmp>)), shl(240, <dataSectionSize>)))
-			</eof>
+				let <address> := eofcreate("<object>", <value>, 1, <argPos>, sub(<memEnd>, <argPos>))
+			<!eof>
 			<?saltSet>
 				let <address> := create2(<value>, <memPos>, sub(<memEnd>, <memPos>), <salt>)
 			<!saltSet>
 				let <address> := create(<value>, <memPos>, sub(<memEnd>, <memPos>))
 			</saltSet>
+			</eof>
 			<?isTryCall>
 				let <success> := iszero(iszero(<address>))
 			<!isTryCall>
@@ -1598,7 +1600,7 @@ void IRGeneratorForStatements::endVisit(FunctionCall const& _functionCall)
 		t("constructorParams", joinHumanReadablePrefixed(constructorParams));
 		t("value", functionType->valueSet() ? IRVariable(_functionCall.expression()).part("value").name() : "0");
 		t("saltSet", functionType->saltSet());
-		if (functionType->saltSet())
+		if (functionType->saltSet() && !m_context.eofVersion().has_value())
 			t("salt", IRVariable(_functionCall.expression()).part("salt").name());
 		solAssert(IRVariable(_functionCall).stackSlots().size() == 1);
 		t("address", IRVariable(_functionCall).commaSeparatedList());

@@ -1414,6 +1414,7 @@ void CompilerStack::assembleYul(
 	solAssert(compiledContract.evmAssembly, "");
 	try
 	{
+		std::cout << compiledContract.yulIR << std::endl;
 		// Assemble deployment (incl. runtime)  object.
 		compiledContract.object = compiledContract.evmAssembly->assemble();
 	}

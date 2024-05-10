@@ -88,6 +88,11 @@ public:
 						i += numCodeSections * 2 + 2; // skip code section header
 						break;
 					}
+					case uint8_t(0x03): // container section
+					{
+						i += 4; // skip container section header
+						break;
+					}
 					case uint8_t(0x04): // data section
 					{
 						auto dataSizeOffset = i + 1;
