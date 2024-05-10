@@ -44,7 +44,6 @@ evmc::VM& EVMHost::getVM(std::string const& _path)
 	{
 		evmc_loader_error_code errorCode = {};
 		auto vm = evmc::VM{evmc_load_and_configure(_path.c_str(), &errorCode)};
-		// vm.set_option("trace", "1");
 		if (vm && errorCode == EVMC_LOADER_SUCCESS)
 		{
 			if (vm.get_capabilities() & (EVMC_CAPABILITY_EVM1))
@@ -59,6 +58,7 @@ evmc::VM& EVMHost::getVM(std::string const& _path)
 				std::cerr << ":" << std::endl << errorMsg;
 			std::cerr << std::endl;
 		}
+		vms[_path]->set_option("trace", "1");
 	}
 
 	if (vms.count(_path) > 0)

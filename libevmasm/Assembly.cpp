@@ -1031,6 +1031,9 @@ LinkerObject const& Assembly::assemble() const
 			toBigEndian(_size, bytesRef(ret.bytecode.data() + *dataSectionSizeOffset, 2));
 		}
 	};
+
+	std::optional<size_t> containerSectionSizeOffset;
+
 	// Insert EOF1 header.
 	if (eof)
 	{
@@ -1038,17 +1041,25 @@ LinkerObject const& Assembly::assemble() const
 		ret.bytecode.push_back(0x00);
 		ret.bytecode.push_back(0x01); // version 1
 
-		ret.bytecode.push_back(0x01); // kind=type
+		ret.bytecode.push_back(0x01);									 // kind=type
 		appendBigEndianUint16(ret.bytecode, m_codeSections.size() * 4u); // length of type section
 
-		ret.bytecode.push_back(0x02); // kind=code
+		ret.bytecode.push_back(0x02);								// kind=code
 		appendBigEndianUint16(ret.bytecode, m_codeSections.size()); // placeholder for number of code sections
 
 		for (auto const& codeSection: m_codeSections)
 		{
-			(void)codeSection;
+			(void) codeSection;
 			codeSectionSizeOffsets.emplace_back(ret.bytecode.size());
 			appendBigEndianUint16(ret.bytecode, 0u); // placeholder for length of code
+		}
+
+		if (!m_subs.empty())
+		{
+			ret.bytecode.push_back(0x03);
+			appendBigEndianUint16(ret.bytecode, m_subs.size());
+			containerSectionSizeOffset = ret.bytecode.size();
+			appendBigEndianUint16(ret.bytecode, 0u); // length of sub containers section
 		}
 
 		ret.bytecode.push_back(0x04); // kind=data
@@ -1271,6 +1282,7 @@ LinkerObject const& Assembly::assemble() const
 	auto const dataStart = ret.bytecode.size();
 
 	std::map<LinkerObject, size_t> subAssemblyOffsets;
+	size_t preContainerSectionBytecodeSize = ret.bytecode.size();
 	for (auto const& [subIdPath, bytecodeOffset]: subRef)
 	{
 		LinkerObject subObject = subAssemblyById(subIdPath)->assemble();
@@ -1289,6 +1301,14 @@ LinkerObject const& Assembly::assemble() const
 		for (auto const& ref: subObject.linkReferences)
 			ret.linkReferences[ref.first + subAssemblyOffsets[subObject]] = ref.second;
 	}
+
+	if (const auto containerSectionSize = ret.bytecode.size() - preContainerSectionBytecodeSize;
+		containerSectionSize > 0)
+	{
+		bytesRef r(ret.bytecode.data() + containerSectionSizeOffset.value(), 2);
+		toBigEndian(containerSectionSize, r);
+	}
+
 	for (auto const& [bytecodeOffset, ref]: tagRef)
 	{
 		size_t subId = ref.subId;
