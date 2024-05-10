@@ -204,6 +204,7 @@ std::map<YulString, BuiltinFunctionForEVM> createBuiltins(langutil::EVMVersion _
 			opcode != evmasm::Instruction::JUMP &&
 			opcode != evmasm::Instruction::JUMPI &&
 			opcode != evmasm::Instruction::JUMPDEST &&
+			opcode != evmasm::Instruction::EOFCREATE &&
 			_evmVersion.hasOpcode(opcode) &&
 			!prevRandaoException(name)
 		)
@@ -306,6 +307,35 @@ std::map<YulString, BuiltinFunctionForEVM> createBuiltins(langutil::EVMVersion _
 				_assembly.appendInstruction(evmasm::Instruction::CODECOPY);
 			}
 		));
+
+		builtins.emplace(createFunction(
+			"eofcreate",
+			5,
+			1,
+			SideEffects{
+				false,               // movable
+				false,                // movableApartFromEffects
+				false,               // canBeRemoved
+				false,               // canBeRemovedIfNotMSize
+				true,                // cannotLoop
+				SideEffects::None,   // otherState
+				SideEffects::None,   // storage
+				SideEffects::Write,  // memory
+				SideEffects::None    // transientStorage
+			},
+			{LiteralKind::String, std::nullopt, std::nullopt, std::nullopt, std::nullopt},
+			[](
+				FunctionCall const& _call,
+				AbstractAssembly& _assembly,
+				BuiltinContext& context
+			) {
+				_assembly.appendInstruction(evmasm::Instruction::EOFCREATE);
+				const auto it = context.subIDs.find(std::get<Literal>(_call.arguments[0]).value);
+				if (it != context.subIDs.end())
+					_assembly.appendVerbatim({static_cast<uint8_t>((*it).second)}, 0, 0);
+			}
+			));
+
 		builtins.emplace(createFunction(
 			"setimmutable",
 			3,
