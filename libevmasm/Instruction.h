@@ -193,6 +193,7 @@ enum class Instruction: uint8_t
 	RETF = 0xe4,
 	JUMPF = 0xe5,
 
+	EOFCREATE = 0xec,         ///< create a new account with associated container code.
 	CREATE = 0xf0,            ///< create a new account with associated code
 	CALL,                     ///< message-call into an account
 	CALLCODE,                 ///< message-call with another account's code only
