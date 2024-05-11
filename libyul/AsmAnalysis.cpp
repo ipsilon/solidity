@@ -313,6 +313,10 @@ void AsmAnalyzer::operator()(FunctionDefinition const& _funDef)
 
 std::vector<YulString> AsmAnalyzer::operator()(FunctionCall const& _funCall)
 {
+	if (_funCall.functionName.name.str() == "eofcreate")
+	{
+		_funCall.functionName.name.str();
+	}
 	yulAssert(!_funCall.functionName.name.empty(), "");
 	auto watcher = m_errorReporter.errorWatcher();
 	std::vector<YulString> const* parameterTypes = nullptr;

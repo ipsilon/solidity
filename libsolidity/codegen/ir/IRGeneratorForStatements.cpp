@@ -1576,7 +1576,7 @@ void IRGeneratorForStatements::endVisit(FunctionCall const& _functionCall)
 				<dataSectionSize> := add(<dataSectionSize>, <argSize>)
 				if gt(<dataSectionSize>, 0xFFFF) { <panic>() }
 				mstore(<dataSectionOffset>, or(shr(16, shl(16, <tmp>)), shl(240, <dataSectionSize>)))
-				let <address> := eofcreate("<object>", <value>, 1, <argPos>, sub(<memEnd>, <argPos>))
+				let <address> := eofcreate("<object>", <value>, 1, <argPos>, <argSize>)
 			<!eof>
 			<?saltSet>
 				let <address> := create2(<value>, <memPos>, sub(<memEnd>, <memPos>), <salt>)
