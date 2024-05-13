@@ -1568,7 +1568,7 @@ void CompilerStack::generateIR(ContractDefinition const& _contract)
 			createCBORMetadata(compiledContract, /* _forIR */ true),
 			otherYulSources
 		);
-		std::cout << compiledContract.yulIR << std::endl;
+		// std::cout << compiledContract.yulIR << std::endl;
 	}
 
 	yul::YulStack stack(

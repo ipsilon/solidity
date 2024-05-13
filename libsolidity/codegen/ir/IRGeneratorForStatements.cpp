@@ -1550,28 +1550,23 @@ void IRGeneratorForStatements::endVisit(FunctionCall const& _functionCall)
 			&dynamic_cast<ContractType const&>(*functionType->returnParameterTypes().front()).contractDefinition();
 		m_context.subObjectsCreated().insert(contract);
 
-		Whiskers t(R"(let <memPos> := <allocateUnbounded>()
-			let <argPos> := add(<memPos>, datasize("<object>"))
-			if or(gt(<argPos>, 0xffffffffffffffff), lt(<argPos>, <memPos>)) { <panic>() }
-			datacopy(<memPos>, dataoffset("<object>"), datasize("<object>"))
-			let <memEnd> := <abiEncode>(<argPos><constructorParams>)
+		Whiskers t(R"(
+			let <memPos> := <allocateUnbounded>()
 			<?eof>
-				// TODO: this is horrible and hopefully avoided at the spec level
+				let <argPos> := <memPos>
+				let <memEnd> := <abiEncode>(<argPos><constructorParams>)
 				let <argSize> := sub(<memEnd>, <argPos>)
-				let <numCodeSections> := shr(240, mload(add(<memPos>, 7)))
-				let <dataSectionOffset> := add(<memPos>, add(10, mul(<numCodeSections>, 2)))
-				let <tmp> := mload(<dataSectionOffset>)
-				let <dataSectionSize> := shr(240, <tmp>)
-				<dataSectionSize> := add(<dataSectionSize>, <argSize>)
-				if gt(<dataSectionSize>, 0xFFFF) { <panic>() }
-				mstore(<dataSectionOffset>, or(shr(16, shl(16, <tmp>)), shl(240, <dataSectionSize>)))
 				let <address> := eofcreate("<object>", <value>, 1, <argPos>, <argSize>)
 			<!eof>
-			<?saltSet>
-				let <address> := create2(<value>, <memPos>, sub(<memEnd>, <memPos>), <salt>)
-			<!saltSet>
-				let <address> := create(<value>, <memPos>, sub(<memEnd>, <memPos>))
-			</saltSet>
+				let <argPos> := add(<memPos>, datasize("<object>"))
+				if or(gt(<argPos>, 0xffffffffffffffff), lt(<argPos>, <memPos>)) { <panic>() }
+				datacopy(<memPos>, dataoffset("<object>"), datasize("<object>"))
+
+				<?saltSet>
+					let <address> := create2(<value>, <memPos>, sub(<memEnd>, <memPos>), <salt>)
+				<!saltSet>
+					let <address> := create(<value>, <memPos>, sub(<memEnd>, <memPos>))
+				</saltSet>
 			</eof>
 			<?isTryCall>
 				let <success> := iszero(iszero(<address>))
@@ -1583,10 +1578,6 @@ void IRGeneratorForStatements::endVisit(FunctionCall const& _functionCall)
 		if (m_context.eofVersion().has_value())
 		{
 			t("argSize", m_context.newYulVariable());
-			t("numCodeSections", m_context.newYulVariable());
-			t("dataSectionOffset", m_context.newYulVariable());
-			t("dataSectionSize", m_context.newYulVariable());
-			t("tmp", m_context.newYulVariable());
 		}
 		t("memPos", m_context.newYulVariable());
 		t("argPos", m_context.newYulVariable());
