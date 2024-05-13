@@ -1312,7 +1312,8 @@ LinkerObject const& Assembly::assemble() const
 			toBigEndian(*subAssemblyOffset, r);
 		else
 		{
-			toBigEndian(ret.bytecode.size(), r);
+			if (!eof)
+				toBigEndian(ret.bytecode.size(), r);
 			subAssemblyOffsets[subObject] = ret.bytecode.size();
 			ret.bytecode += subObject.bytecode;
 		}
