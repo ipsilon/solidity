@@ -169,6 +169,16 @@ std::vector<SemanticInformation::Operation> SemanticInformation::readWriteOperat
 		});
 		return operations;
 	}
+	case Instruction::EXTSTATICCALL:
+	{
+		size_t paramCount = static_cast<size_t>(instructionInfo(_instruction, langutil::EVMVersion()).args);
+		std::vector<Operation> operations{
+			Operation{Location::Memory, Effect::Read, paramCount - 2, paramCount - 1, {}},
+			Operation{Location::Storage, Effect::Read, {}, {}, {}},
+			Operation{Location::TransientStorage, Effect::Read, {}, {}, {}}
+		};
+		return operations;
+	}
 	case Instruction::CREATE:
 	case Instruction::CREATE2:
 		return std::vector<Operation>{
@@ -346,6 +356,7 @@ bool SemanticInformation::isDeterministic(AssemblyItem const& _item)
 	case Instruction::CALLCODE:
 	case Instruction::DELEGATECALL:
 	case Instruction::STATICCALL:
+	case Instruction::EXTSTATICCALL:
 	case Instruction::CREATE:
 	case Instruction::CREATE2:
 	case Instruction::GAS:
@@ -422,6 +433,7 @@ SemanticInformation::Effect SemanticInformation::memory(Instruction _instruction
 	case Instruction::CALLCODE:
 	case Instruction::DELEGATECALL:
 	case Instruction::STATICCALL:
+	case Instruction::EXTSTATICCALL:
 		return SemanticInformation::Write;
 
 	case Instruction::CREATE:

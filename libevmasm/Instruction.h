@@ -202,6 +202,7 @@ enum class Instruction: uint8_t
 	DELEGATECALL,             ///< like CALLCODE but keeps caller's value and sender
 	CREATE2 = 0xf5,           ///< create new account with associated code at address `sha3(0xff + sender + salt + init code) % 2**160`
 	STATICCALL = 0xfa,        ///< like CALL but disallow state modifications
+	EXTSTATICCALL = 0xfb,
 
 	REVERT = 0xfd,            ///< halt execution, revert state and return output data
 	INVALID = 0xfe,           ///< invalid instruction for expressing runtime errors (e.g., division-by-zero)
@@ -217,6 +218,7 @@ constexpr bool isCallInstruction(Instruction _inst) noexcept
 		case Instruction::CALLCODE:
 		case Instruction::DELEGATECALL:
 		case Instruction::STATICCALL:
+		case Instruction::EXTSTATICCALL:
 			return true;
 		default:
 			return false;
