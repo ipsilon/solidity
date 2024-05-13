@@ -1000,7 +1000,7 @@ LinkerObject const& Assembly::assemble() const
 	// TODO: consider fully producing all sub and data refs in this pass already.
 	for (auto&& codeSection: m_codeSections)
 		for (AssemblyItem const& i: codeSection.items)
-			if (i.type() == PushSub)
+			if (i.type() == PushSub || i.type() == EofCreate || i.type() == ReturnContract)
 				bytesRequiredForSubs += static_cast<unsigned>(subAssemblyById(static_cast<size_t>(i.data()))->assemble().bytecode.size());
 	unsigned bytesRequiredForDataUpperBound = static_cast<unsigned>(m_auxiliaryData.size());
 	// Some of these may be unreferenced and not actually end up in data.
@@ -1122,6 +1122,10 @@ LinkerObject const& Assembly::assemble() const
 			switch (i.type())
 			{
 				case Operation:
+					if (i.instruction() == Instruction::RETURNCONTRACT || i.instruction() == Instruction::EOFCREATE)
+					{
+						(void)i;
+					}
 					ret.bytecode.push_back(static_cast<uint8_t>(i.instruction()));
 					break;
 				case Push:
@@ -1251,6 +1255,22 @@ LinkerObject const& Assembly::assemble() const
 					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::RETF));
 					break;
 				}
+				case EofCreate:
+				{
+					assertThrow(eof, AssemblyException, "Eof create (EOFCREATE) in non-EOF code");
+					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::EOFCREATE));
+					ret.bytecode.push_back(static_cast<uint8_t>(i.data()));
+					subRef.insert(std::make_pair(static_cast<size_t>(i.data()), ret.bytecode.size()));
+					break;
+				}
+				case ReturnContract:
+				{
+					assertThrow(eof, AssemblyException, "Return contract (RETURNCONTRACT) in non-EOF code");
+					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::RETURNCONTRACT));
+					ret.bytecode.push_back(static_cast<uint8_t>(i.data()));
+					subRef.insert(std::make_pair(static_cast<size_t>(i.data()), ret.bytecode.size()));
+					break;
+				}
 				case RelativeJump:
 				case ConditionalRelativeJump:
 				{
@@ -1282,8 +1302,6 @@ LinkerObject const& Assembly::assemble() const
 	if (!eof && (!m_subs.empty() || !m_data.empty() || !m_auxiliaryData.empty()))
 		// Append an INVALID here to help tests find miscompilation.
 		ret.bytecode.push_back(static_cast<uint8_t>(Instruction::INVALID));
-
-	auto const dataStart = ret.bytecode.size();
 
 	std::map<LinkerObject, size_t> subAssemblyOffsets;
 	size_t preContainerSectionBytecodeSize = ret.bytecode.size();
@@ -1364,6 +1382,8 @@ LinkerObject const& Assembly::assemble() const
 			tagInfo.returns
 		};
 	}
+
+	auto const dataStart = ret.bytecode.size();
 
 	for (auto const& dataItem: m_data)
 	{

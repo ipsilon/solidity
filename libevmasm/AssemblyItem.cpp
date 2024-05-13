@@ -182,6 +182,10 @@ size_t AssemblyItem::bytesRequired(size_t _addressLength, Precision _precision) 
 		return 3;
 	case ConditionalRelativeJump:
 		return 3;
+	case EofCreate:
+		return 2;
+	case ReturnContract:
+		return 2;
 	default:
 		break;
 	}
@@ -207,6 +211,10 @@ size_t AssemblyItem::arguments() const
 		return static_cast<size_t>(data());
 	else if (type() == ConditionalRelativeJump)
 		return 1;
+	else if (type() == EofCreate)
+		return 4;
+	else if (type() == ReturnContract)
+		return 2;
 	else
 		return 0;
 }
@@ -237,7 +245,10 @@ size_t AssemblyItem::returnValues() const
 		assertThrow(m_functionSignature.has_value(), AssemblyException, "");
 		return std::get<1>(*m_functionSignature);
 	case RetF:
+	case ReturnContract:
 		return 0;
+	case EofCreate:
+		return 1;
 	default:
 		break;
 	}

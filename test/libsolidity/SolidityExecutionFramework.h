@@ -109,7 +109,7 @@ public:
 			}
 		}
 
-		sendMessage(bytecode + _arguments, true, _value);
+		sendMessage(bytecode, _arguments, true, _value);
 		return m_output;
 	}
 

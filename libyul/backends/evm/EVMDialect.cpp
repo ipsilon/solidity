@@ -205,6 +205,7 @@ std::map<YulString, BuiltinFunctionForEVM> createBuiltins(langutil::EVMVersion _
 			opcode != evmasm::Instruction::JUMPI &&
 			opcode != evmasm::Instruction::JUMPDEST &&
 			opcode != evmasm::Instruction::EOFCREATE &&
+			opcode != evmasm::Instruction::RETURNCONTRACT &&
 			_evmVersion.hasOpcode(opcode) &&
 			!prevRandaoException(name)
 		)
@@ -329,10 +330,36 @@ std::map<YulString, BuiltinFunctionForEVM> createBuiltins(langutil::EVMVersion _
 				AbstractAssembly& _assembly,
 				BuiltinContext& context
 			) {
-				_assembly.appendInstruction(evmasm::Instruction::EOFCREATE);
 				const auto it = context.subIDs.find(std::get<Literal>(_call.arguments[0]).value);
 				if (it != context.subIDs.end())
-					_assembly.appendVerbatim({static_cast<uint8_t>((*it).second)}, 0, 0);
+					_assembly.appendEofCreateCall(static_cast<solidity::yul::AbstractAssembly::ContainerID>((*it).second));
+			}
+			));
+
+		builtins.emplace(createFunction(
+			"returncontract",
+			3,
+			0,
+			SideEffects{
+				false,               // movable
+				false,                // movableApartFromEffects
+				false,               // canBeRemoved
+				false,               // canBeRemovedIfNotMSize
+				true,                // cannotLoop
+				SideEffects::None,   // otherState
+				SideEffects::None,   // storage
+				SideEffects::Write,  // memory
+				SideEffects::None    // transientStorage
+			},
+			{LiteralKind::String, std::nullopt, std::nullopt},
+			[](
+				FunctionCall const& _call,
+				AbstractAssembly& _assembly,
+				BuiltinContext& context
+			) {
+				const auto it = context.subIDs.find(std::get<Literal>(_call.arguments[0]).value);
+				if (it != context.subIDs.end())
+					_assembly.appendReturnContractCall(static_cast<solidity::yul::AbstractAssembly::ContainerID>((*it).second));
 			}
 			));
 
