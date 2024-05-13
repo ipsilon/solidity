@@ -2590,6 +2590,8 @@ void IRGeneratorForStatements::appendExternalFunctionCall(
 	bool const isDelegateCall = funKind == FunctionType::Kind::DelegateCall;
 	bool const useStaticCall = funType.stateMutability() <= StateMutability::View && m_context.evmVersion().hasStaticCall();
 
+	const auto eof = m_context.eofVersion().has_value();
+
 	ReturnInfo const returnInfo{m_context.evmVersion(), funType};
 
 	TypePointers parameterTypes = funType.parameterTypes();
@@ -2630,7 +2632,12 @@ void IRGeneratorForStatements::appendExternalFunctionCall(
 		mstore(<pos>, <shl28>(<funSel>))
 		let <end> := <encodeArgs>(add(<pos>, 4) <argumentString>)
 
-		let <success> := <call>(<gas>, <address>, <?hasValue> <value>, </hasValue> <pos>, sub(<end>, <pos>), <pos>, <staticReturndataSize>)
+		<?eof>
+			let <success> := <call>(<address>, <?hasValue> <value>, </hasValue> <pos>, sub(<end>, <pos>))
+			<success> := iszero(<success>)
+		<!eof>
+			let <success> := <call>(<gas>, <address>, <?hasValue> <value>, </hasValue> <pos>, sub(<end>, <pos>), <pos>, <staticReturndataSize>)
+		</eof>
 		<?noTryCall>
 			if iszero(<success>) { <forwardingRevert>() }
 		</noTryCall>
@@ -2640,12 +2647,18 @@ void IRGeneratorForStatements::appendExternalFunctionCall(
 				let <returnDataSizeVar> := returndatasize()
 				returndatacopy(<pos>, 0, <returnDataSizeVar>)
 			<!isReturndataSizeDynamic>
-				let <returnDataSizeVar> := <staticReturndataSize>
-				<?supportsReturnData>
-					if gt(<returnDataSizeVar>, returndatasize()) {
-						<returnDataSizeVar> := returndatasize()
-					}
-				</supportsReturnData>
+				<?eof>
+					let <returnDataSizeVar> := returndatasize()
+					returndatacopy(<pos>, 0, <returnDataSizeVar>)
+				<!eof>
+					let <returnDataSizeVar> := <staticReturndataSize>
+					<?supportsReturnData>
+						if gt(<returnDataSizeVar>, returndatasize()) {
+							<returnDataSizeVar> := returndatasize()
+						}
+					</supportsReturnData>
+				</eof>
+
 			</isReturndataSizeDynamic>
 
 			// update freeMemoryPointer according to dynamic return size
@@ -2656,6 +2669,7 @@ void IRGeneratorForStatements::appendExternalFunctionCall(
 		}
 	)");
 	templ("revertNoCode", m_utils.revertReasonIfDebugFunction("Target contract does not contain code"));
+	templ("eof", eof);
 
 	// We do not need to check extcodesize if we expect return data: If there is no
 	// code, the call will return empty data and the ABI decoder will revert.
@@ -2725,12 +2739,25 @@ void IRGeneratorForStatements::appendExternalFunctionCall(
 		templ("gas", "sub(gas(), " + formatNumber(gasNeededByCaller) + ")");
 	}
 	// Order is important here, STATICCALL might overlap with DELEGATECALL.
-	if (isDelegateCall)
-		templ("call", "delegatecall");
-	else if (useStaticCall)
-		templ("call", "staticcall");
+	if (!eof)
+	{
+		if (isDelegateCall)
+			templ("call", "delegatecall");
+		else if (useStaticCall)
+			templ("call", "staticcall");
+		else
+			templ("call", "call");
+	}
 	else
-		templ("call", "call");
+	{
+		if (isDelegateCall)
+			templ("call", "extdelegatecall");
+		else if (useStaticCall)
+			templ("call", "extstaticcall");
+		else
+			templ("call", "extcall");
+	}
+
 
 	templ("forwardingRevert", m_utils.forwardingRevertFunction());
 
