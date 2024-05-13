@@ -1322,7 +1322,7 @@ void CompilerStack::assembleYul(
 	solAssert(compiledContract.evmAssembly, "");
 	try
 	{
-		std::cout << compiledContract.yulIROptimized << std::endl;
+		// std::cout << compiledContract.yulIROptimized << std::endl;
 		// Assemble deployment (incl. runtime)  object.
 		compiledContract.object = compiledContract.evmAssembly->assemble();
 	}
