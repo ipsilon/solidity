@@ -1322,12 +1322,13 @@ void CompilerStack::assembleYul(
 	solAssert(compiledContract.evmAssembly, "");
 	try
 	{
-		std::cout << compiledContract.yulIR << std::endl;
+		std::cout << compiledContract.yulIROptimized << std::endl;
 		// Assemble deployment (incl. runtime)  object.
 		compiledContract.object = compiledContract.evmAssembly->assemble();
 	}
-	catch (evmasm::AssemblyException const&)
+	catch (evmasm::AssemblyException const& exc)
 	{
+		std::cout << exc.what() << std::endl;
 		solAssert(false, "Assembly exception for bytecode");
 	}
 	solAssert(compiledContract.object.immutableReferences.empty(), "Leftover immutables.");
@@ -1475,6 +1476,7 @@ void CompilerStack::generateIR(ContractDefinition const& _contract)
 			createCBORMetadata(compiledContract, /* _forIR */ true),
 			otherYulSources
 		);
+		std::cout << compiledContract.yulIR << std::endl;
 	}
 
 	yul::YulStack stack(

@@ -55,7 +55,9 @@ enum AssemblyItemType
 	CallF,
 	RetF,
 	RelativeJump,
-	ConditionalRelativeJump
+	ConditionalRelativeJump,
+	EofCreate,
+	ReturnContract
 };
 
 enum class Precision { Precise , Approximate };
@@ -108,6 +110,14 @@ public:
 	static AssemblyItem conditionalJumpTo(AssemblyItem _tag, langutil::DebugData::ConstPtr _debugData = langutil::DebugData::create())
 	{
 		return AssemblyItem(ConditionalRelativeJump, _tag.data(), _debugData);
+	}
+	static AssemblyItem eofCreate(uint16_t _containerID, langutil::DebugData::ConstPtr _debugData = langutil::DebugData::create())
+	{
+		return AssemblyItem(EofCreate, _containerID, _debugData);
+	}
+	static AssemblyItem returnContract(uint16_t _containerID, langutil::DebugData::ConstPtr _debugData = langutil::DebugData::create())
+	{
+		return AssemblyItem(ReturnContract, _containerID, _debugData);
 	}
 
 	AssemblyItem(AssemblyItem const&) = default;

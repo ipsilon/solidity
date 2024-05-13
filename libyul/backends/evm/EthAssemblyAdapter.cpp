@@ -170,6 +170,16 @@ void EthAssemblyAdapter::appendFunctionCall(FunctionID _functionID)
 	m_assembly.appendFunctionCall(_functionID);
 }
 
+void EthAssemblyAdapter::appendEofCreateCall(ContainerID _containerID)
+{
+	m_assembly.appendEOFCreate(_containerID);
+}
+
+void EthAssemblyAdapter::appendReturnContractCall(ContainerID _containerID)
+{
+	m_assembly.appendReturnContract(_containerID);
+}
+
 void EthAssemblyAdapter::appendDataOffset(std::vector<AbstractAssembly::SubID> const& _subPath)
 {
 	if (auto it = m_dataHashBySubId.find(_subPath[0]); it != m_dataHashBySubId.end())
