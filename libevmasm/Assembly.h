@@ -54,7 +54,8 @@ public:
 	m_eofVersion(_eofVersion),
 	m_name(std::move(_name))
 	{
-		m_codeSections.emplace_back();
+		// Code section number 0 has to be non-returning.
+		m_codeSections.emplace_back(CodeSection{0, 0x80, {}});
 	}
 
 	std::optional<uint8_t> eofVersion() const { return m_eofVersion; }

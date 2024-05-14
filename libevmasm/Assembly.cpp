@@ -963,8 +963,8 @@ LinkerObject const& Assembly::assemble() const
 	assertThrow(!m_codeSections.empty(), AssemblyException, "Expected at least one code section.");
 	assertThrow(eof || m_codeSections.size() == 1, AssemblyException, "Expected exactly one code section in non-EOF code.");
 	assertThrow(
-		m_codeSections.front().inputs == 0 && m_codeSections.front().outputs == 0, AssemblyException,
-		"Expected the first code section to have zero inputs and outputs."
+		m_codeSections.front().inputs == 0 && m_codeSections.front().outputs == 0x80, AssemblyException,
+		"Expected the first code section to have zero inputs and be non-returning."
 	);
     
 //	unsigned bytesRequiredForCode = codeSize(static_cast<unsigned>(subTagSize));
