@@ -336,7 +336,7 @@ std::map<YulString, BuiltinFunctionForEVM> createBuiltins(langutil::EVMVersion _
 			}
 			));
 
-		builtins.emplace(createFunction(
+		auto [it, _] = builtins.emplace(createFunction(
 			"returncontract",
 			3,
 			0,
@@ -362,6 +362,9 @@ std::map<YulString, BuiltinFunctionForEVM> createBuiltins(langutil::EVMVersion _
 					_assembly.appendReturnContractCall(static_cast<solidity::yul::AbstractAssembly::ContainerID>((*it).second));
 			}
 			));
+		(*it).second.controlFlowSideEffects.canContinue = false;
+		(*it).second.controlFlowSideEffects.canTerminate = true;
+		(*it).second.controlFlowSideEffects.canRevert = false;
 
 		builtins.emplace(createFunction(
 			"setimmutable",
