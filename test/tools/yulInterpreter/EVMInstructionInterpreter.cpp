@@ -390,7 +390,9 @@ u256 EVMInstructionInterpreter::eval(
 			(arg[0] > 0) &&
 			(arg[1] == util::h160::Arith(m_state.address) || (arg[1] & 1))
 		) ? 1 : 0;
+	case Instruction::EXTCALL:
 	case Instruction::EXTSTATICCALL:
+	case Instruction::EXTDELEGATECALL:
 		accessMemory(arg[1], arg[2]);
 		logTrace(_instruction, arg);
 		return (
