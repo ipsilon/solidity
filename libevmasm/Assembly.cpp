@@ -877,7 +877,8 @@ uint16_t calcMaxStackHeight(std::vector<AssemblyItem> const& _items, uint16_t _a
 		if (
 			item.type() != RelativeJump &&
 			!(item.type() == Operation && SemanticInformation::terminatesControlFlow(item.instruction())) &&
-			item.type() != RetF
+			item.type() != RetF &&
+			item.type() != ReturnContract
 		)
 		{
 			assertThrow(i < _items.size() - 1, AssemblyException, "No terminating instruction.");
