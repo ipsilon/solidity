@@ -200,6 +200,8 @@ enum class Instruction: uint8_t
 	RETURN,                   ///< halt execution returning output data
 	DELEGATECALL,             ///< like CALLCODE but keeps caller's value and sender
 	CREATE2 = 0xf5,           ///< create new account with associated code at address `sha3(0xff + sender + salt + init code) % 2**160`
+	EXTCALL = 0xf8,
+	EXTDELEGATECALL = 0xf9,
 	STATICCALL = 0xfa,        ///< like CALL but disallow state modifications
 	EXTSTATICCALL = 0xfb,
 
@@ -217,7 +219,9 @@ constexpr bool isCallInstruction(Instruction _inst) noexcept
 		case Instruction::CALLCODE:
 		case Instruction::DELEGATECALL:
 		case Instruction::STATICCALL:
+		case Instruction::EXTCALL:
 		case Instruction::EXTSTATICCALL:
+		case Instruction::EXTDELEGATECALL:
 			return true;
 		default:
 			return false;

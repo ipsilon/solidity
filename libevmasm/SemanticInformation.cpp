@@ -358,6 +358,8 @@ bool SemanticInformation::isDeterministic(AssemblyItem const& _item)
 	case Instruction::CALLCODE:
 	case Instruction::DELEGATECALL:
 	case Instruction::STATICCALL:
+	case Instruction::EXTCALL:
+	case Instruction::EXTDELEGATECALL:
 	case Instruction::EXTSTATICCALL:
 	case Instruction::CREATE:
 	case Instruction::CREATE2:
@@ -435,7 +437,9 @@ SemanticInformation::Effect SemanticInformation::memory(Instruction _instruction
 	case Instruction::CALLCODE:
 	case Instruction::DELEGATECALL:
 	case Instruction::STATICCALL:
+	case Instruction::EXTCALL:
 	case Instruction::EXTSTATICCALL:
+	case Instruction::EXTDELEGATECALL:
 		return SemanticInformation::Write;
 
 	case Instruction::CREATE:

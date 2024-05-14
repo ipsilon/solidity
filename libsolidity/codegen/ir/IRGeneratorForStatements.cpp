@@ -2633,7 +2633,7 @@ void IRGeneratorForStatements::appendExternalFunctionCall(
 		let <end> := <encodeArgs>(add(<pos>, 4) <argumentString>)
 
 		<?eof>
-			let <success> := <call>(<address>, <?hasValue> <value>, </hasValue> <pos>, sub(<end>, <pos>))
+			let <success> := <call>(<address>, <pos>, sub(<end>, <pos>) <?hasValue>, <value> </hasValue>)
 			<success> := iszero(<success>)
 		<!eof>
 			let <success> := <call>(<gas>, <address>, <?hasValue> <value>, </hasValue> <pos>, sub(<end>, <pos>), <pos>, <staticReturndataSize>)
