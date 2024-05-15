@@ -1322,7 +1322,10 @@ LinkerObject const& Assembly::assemble() const
 		// In order for de-duplication to kick in, not only must the bytecode be identical, but
 		// link and immutables references as well.
 		if (size_t* subAssemblyOffset = util::valueOrNullptr(subAssemblyOffsets, subObject))
-			toBigEndian(*subAssemblyOffset, r);
+		{
+			if (!eof)
+				toBigEndian(*subAssemblyOffset, r);
+		}
 		else
 		{
 			if (!eof)
