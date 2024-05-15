@@ -2817,10 +2817,10 @@ void IRGeneratorForStatements::appendBareCall(
 		</needsEncoding>
 
 		<?eof>
-			let <success> := <call>(<address>, <pos>, sub(<end>, <pos>) <?+value>, <value></+value>)
+			let <success> := <call>(<address>, <pos>, <length> <?+value>, <value></+value>)
 			<success> := iszero(<success>)
 		<!eof>
-			let <success> := <call>(<gas>, <address>, <pos>, <length>, 0, 0)
+			let <success> := <call>(<gas>, <address>, <?+value> <value>, </+value> <pos>, <length>, 0, 0)
 		</eof>
 
 		let <returndataVar> := <extractReturndataFunction>()
@@ -2829,6 +2829,8 @@ void IRGeneratorForStatements::appendBareCall(
 	templ("allocateUnbounded", m_utils.allocateUnboundedFunction());
 	templ("pos", m_context.newYulVariable());
 	templ("length", m_context.newYulVariable());
+	const auto eof = m_context.eofVersion().has_value();
+	templ("eof", eof);
 
 	templ("arg", IRVariable(*_arguments.front()).commaSeparatedList());
 	Type const& argType = type(*_arguments.front());
@@ -2857,9 +2859,19 @@ void IRGeneratorForStatements::appendBareCall(
 		solAssert(!funType.valueSet(), "Value set for delegatecall or staticcall.");
 		templ("value", "");
 		if (funKind == FunctionType::Kind::BareStaticCall)
-			templ("call", "staticcall");
+		{
+			if (eof)
+				templ("call", "extstaticcall");
+			else
+				templ("call", "staticcall");
+		}
 		else
-			templ("call", "delegatecall");
+		{
+			if (eof)
+				templ("call", "extdelegatecall");
+			else
+				templ("call", "delegatecall");
+		}
 	}
 
 	if (funType.gasSet())
