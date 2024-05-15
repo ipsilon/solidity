@@ -174,6 +174,7 @@ size_t AssemblyItem::bytesRequired(size_t _addressLength, Precision _precision) 
 	}
 	case VerbatimBytecode:
 		return std::get<2>(*m_verbatimBytecode).size();
+	case JumpF:
 	case CallF:
 		return 3;
 	case RetF:
@@ -202,7 +203,7 @@ size_t AssemblyItem::arguments() const
 		return std::get<0>(*m_verbatimBytecode);
 	else if (type() == AssignImmutable)
 		return 2;
-	else if (type() == CallF)
+	else if (type() == CallF || type() == JumpF)
 	{
 		assertThrow(m_functionSignature.has_value(), AssemblyException, "");
 		return std::get<0>(*m_functionSignature);
@@ -244,6 +245,8 @@ size_t AssemblyItem::returnValues() const
 	case CallF:
 		assertThrow(m_functionSignature.has_value(), AssemblyException, "");
 		return std::get<1>(*m_functionSignature);
+	case JumpF:
+		return 0;
 	case RetF:
 	case ReturnContract:
 		return 0;
