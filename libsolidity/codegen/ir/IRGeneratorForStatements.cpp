@@ -1660,7 +1660,12 @@ void IRGeneratorForStatements::endVisit(FunctionCall const& _functionCall)
 			<?isECRecover>
 				mstore(0, 0)
 			</isECRecover>
-			let <success> := <call>(<gas>, <address> <?isCall>, 0</isCall>, <pos>, sub(<end>, <pos>), 0, 32)
+			<?eof>
+				let <success> := <call>(<address>, <pos>, sub(<end>, <pos>) <?isCall>, 0</isCall>)
+				<success> := iszero(<success>)
+			<!eof>
+				let <success> := <call>(<gas>, <address> <?isCall>, 0</isCall>, <pos>, sub(<end>, <pos>), 0, 32)
+			</eof>
 			if iszero(<success>) { <forwardingRevert>() }
 			let <retVars> := <shl>(mload(0))
 		)");
@@ -1671,6 +1676,7 @@ void IRGeneratorForStatements::endVisit(FunctionCall const& _functionCall)
 		templ("pos", m_context.newYulVariable());
 		templ("end", m_context.newYulVariable());
 		templ("isECRecover", FunctionType::Kind::ECRecover == functionType->kind());
+		templ("eof", m_context.eofVersion().has_value());
 		if (FunctionType::Kind::ECRecover == functionType->kind())
 			templ("encodeArgs", m_context.abiFunctions().tupleEncoder(argumentTypes, parameterTypes));
 		else
@@ -2633,7 +2639,7 @@ void IRGeneratorForStatements::appendExternalFunctionCall(
 		let <end> := <encodeArgs>(add(<pos>, 4) <argumentString>)
 
 		<?eof>
-			let <success> := <call>(<address>, <pos>, sub(<end>, <pos>) <?hasValue>, <value> </hasValue>)
+			let <success> := <call>(<address>, <pos>, sub(<end>, <pos>) <?hasValue>, <value></hasValue>)
 			<success> := iszero(<success>)
 		<!eof>
 			let <success> := <call>(<gas>, <address>, <?hasValue> <value>, </hasValue> <pos>, sub(<end>, <pos>), <pos>, <staticReturndataSize>)
@@ -2796,7 +2802,13 @@ void IRGeneratorForStatements::appendBareCall(
 			let <length> := mload(<arg>)
 		</needsEncoding>
 
-		let <success> := <call>(<gas>, <address>, <?+value> <value>, </+value> <pos>, <length>, 0, 0)
+		<?eof>
+			let <success> := <call>(<address>, <pos>, sub(<end>, <pos>) <?+value>, <value></+value>)
+			<success> := iszero(<success>)
+		<!eof>
+			let <success> := <call>(<gas>, <address>, <pos>, <length>, 0, 0)
+		</eof>
+
 		let <returndataVar> := <extractReturndataFunction>()
 	)");
 
