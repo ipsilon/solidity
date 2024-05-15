@@ -170,10 +170,21 @@ std::vector<SemanticInformation::Operation> SemanticInformation::readWriteOperat
 		return operations;
 	}
 	case Instruction::EXTSTATICCALL:
+	case Instruction::EXTDELEGATECALL:
 	{
 		size_t paramCount = static_cast<size_t>(instructionInfo(_instruction, langutil::EVMVersion()).args);
 		std::vector<Operation> operations{
 			Operation{Location::Memory, Effect::Read, paramCount - 2, paramCount - 1, {}},
+			Operation{Location::Storage, Effect::Read, {}, {}, {}},
+			Operation{Location::TransientStorage, Effect::Read, {}, {}, {}}
+		};
+		return operations;
+	}
+	case Instruction::EXTCALL:
+	{
+		size_t paramCount = static_cast<size_t>(instructionInfo(_instruction, langutil::EVMVersion()).args);
+		std::vector<Operation> operations{
+			Operation{Location::Memory, Effect::Read, paramCount - 3, paramCount - 2, {}},
 			Operation{Location::Storage, Effect::Read, {}, {}, {}},
 			Operation{Location::TransientStorage, Effect::Read, {}, {}, {}}
 		};
