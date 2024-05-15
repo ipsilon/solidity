@@ -430,7 +430,10 @@ evmc::Result EVMHost::call(evmc_message const& _message) noexcept
 	if (result.status_code != EVMC_SUCCESS)
 		accounts = stateBackup;
 
-	return result;
+	if (message.depth > 0 && message.kind == EVMC_EOFCREATE)
+		return evmc::Result{result.status_code, result.gas_left, result.gas_refund, message.recipient};
+	else
+	    return result;
 }
 
 evmc::bytes32 EVMHost::get_block_hash(int64_t _number) const noexcept
