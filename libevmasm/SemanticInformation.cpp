@@ -214,6 +214,7 @@ bool SemanticInformation::breaksCSEAnalysisBlock(AssemblyItem const& _item, bool
 	case AssignImmutable:
 	case VerbatimBytecode:
 	case CallF:
+	case JumpF:
 	case RetF:
 		return true;
 	case Push:

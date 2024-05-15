@@ -67,7 +67,10 @@ public:
 	{
 		assertThrow(_functionID < m_codeSections.size(), AssemblyException, "Call to undeclared function.");
 		auto const& section = m_codeSections.at(_functionID);
-		return AssemblyItem::functionCall(_functionID, section.inputs, section.outputs);
+		if (section.outputs != 0x80)
+			return AssemblyItem::functionCall(_functionID, section.inputs, section.outputs);
+		else
+			return AssemblyItem::jumpF(_functionID, section.inputs);
 	}
 	AssemblyItem newFunctionReturn()
 	{
@@ -83,6 +86,7 @@ public:
 		size_t functionID = m_codeSections.size();
 		assertThrow(functionID < 1024, AssemblyException, "Too many functions.");
 		assertThrow(m_currentCodeSection == 0, AssemblyException, "Functions need to be declared from the main block.");
+		assertThrow(_rets <= 0x80, AssemblyException, "Too many function returns.");
 		m_codeSections.emplace_back(CodeSection{_args, _rets, {}});
 		return static_cast<uint16_t>(functionID);
 	}

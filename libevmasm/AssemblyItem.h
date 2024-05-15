@@ -53,6 +53,7 @@ enum AssemblyItemType
 	AssignImmutable, ///< Assigns the current value on the stack to an immutable variable. Only valid during creation code.
 	VerbatimBytecode, ///< Contains data that is inserted into the bytecode code section without modification.
 	CallF,
+	JumpF,
 	RetF,
 	RelativeJump,
 	ConditionalRelativeJump,
@@ -97,6 +98,12 @@ public:
 	{
 		AssemblyItem result(CallF, _functionID, _debugData);
 		result.m_functionSignature = std::make_tuple(_args, _rets);
+		return result;
+	}
+	static AssemblyItem jumpF(uint16_t _functionID, uint8_t _args, langutil::DebugData::ConstPtr _debugData = langutil::DebugData::create())
+	{
+		AssemblyItem result(JumpF, _functionID, _debugData);
+		result.m_functionSignature = std::make_tuple(_args, 0);
 		return result;
 	}
 	static AssemblyItem functionReturn(uint8_t _rets, langutil::DebugData::ConstPtr _debugData = langutil::DebugData::create())

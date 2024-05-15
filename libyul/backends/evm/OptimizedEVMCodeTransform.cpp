@@ -62,7 +62,7 @@ std::vector<StackTooDeepError> OptimizedEVMCodeTransform::run(
 			yulAssert(info.returnVariables.size() <= 0xFF);
 			auto functionID = _assembly.createFunction(
 				static_cast<uint8_t>(info.parameters.size()),
-				static_cast<uint8_t>(info.returnVariables.size())
+				static_cast<uint8_t>(info.canContinue ? info.returnVariables.size() : 0x80)
 			);
 			_builtinContext.functionIDs[function] = functionID;
 		}
@@ -112,8 +112,8 @@ void OptimizedEVMCodeTransform::operator()(CFG::FunctionCall const& _call)
 		if (m_dfg.useFunctions)
 		{
 			m_assembly.appendFunctionCall(m_builtinContext.functionIDs.at(&_call.function.get()));
-			if (!_call.canContinue)
-				m_assembly.appendInstruction(evmasm::Instruction::INVALID);
+//			if (!_call.canContinue)
+//				m_assembly.appendInstruction(evmasm::Instruction::INVALID);
 		}
 		else
 			m_assembly.appendJumpTo(
@@ -131,8 +131,11 @@ void OptimizedEVMCodeTransform::operator()(CFG::FunctionCall const& _call)
 		for (size_t i = 0; i < _call.function.get().arguments.size() + (useReturnLabel ? 1 : 0); ++i)
 			m_stack.pop_back();
 		// Push return values to m_stack.
+		yulAssert(_call.function.get().returns.size() < 0x80, "Num of function output >= 128");
+
 		for (size_t index: ranges::views::iota(0u, _call.function.get().returns.size()))
 			m_stack.emplace_back(TemporarySlot{_call.functionCall, index});
+
 		yulAssert(m_assembly.stackHeight() == static_cast<int>(m_stack.size()), "");
 	}
 }

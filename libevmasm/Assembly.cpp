@@ -878,7 +878,8 @@ uint16_t calcMaxStackHeight(std::vector<AssemblyItem> const& _items, uint16_t _a
 			item.type() != RelativeJump &&
 			!(item.type() == Operation && SemanticInformation::terminatesControlFlow(item.instruction())) &&
 			item.type() != RetF &&
-			item.type() != ReturnContract
+			item.type() != ReturnContract &&
+			item.type() != JumpF
 		)
 		{
 			assertThrow(i < _items.size() - 1, AssemblyException, "No terminating instruction.");
@@ -1243,6 +1244,13 @@ LinkerObject const& Assembly::assemble() const
 				{
 					assertThrow(eof, AssemblyException, "Function call (CALLF) in non-EOF code");
 					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::CALLF));
+					appendBigEndianUint16(ret.bytecode, i.data());
+					break;
+				}
+				case JumpF:
+				{
+					assertThrow(eof, AssemblyException, "Function call (JUMPF) in non-EOF code");
+					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::JUMPF));
 					appendBigEndianUint16(ret.bytecode, i.data());
 					break;
 				}
