@@ -142,10 +142,6 @@ void OptimizedEVMCodeTransform::operator()(CFG::FunctionCall const& _call)
 
 void OptimizedEVMCodeTransform::operator()(CFG::BuiltinCall const& _call)
 {
-	if ("eofcreate" == _call.functionCall.get().functionName.name.str())
-	{
-		_call.functionCall.get();
-	}
 	// Validate stack.
 	{
 		yulAssert(m_assembly.stackHeight() == static_cast<int>(m_stack.size()), "");
