@@ -10,8 +10,10 @@ contract C {
 	function f() public payable returns (bool) {
 		// Make sure none of these revert.
 		new B1{value: 10}();
-		new B2{value: 10}();
-		new B3{value: 10}();
+		bytes32 s1 = 0x0000000000000000000000000000000000000000000000000000000000000001;
+		new B2{value: 10, salt: s1}();
+		bytes32 s2 = 0x0000000000000000000000000000000000000000000000000000000000000002;
+		new B3{value: 10, salt: s2}();
 		return true;
 	}
 }
