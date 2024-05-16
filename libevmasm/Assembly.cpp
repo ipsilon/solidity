@@ -1337,11 +1337,14 @@ LinkerObject const& Assembly::assemble() const
 			ret.linkReferences[ref.first + subAssemblyOffsets[subObject]] = ref.second;
 	}
 
-	if (const auto containerSectionSize = ret.bytecode.size() - preContainerSectionBytecodeSize;
-		containerSectionSize > 0)
+	if (eof)
 	{
-		bytesRef r(ret.bytecode.data() + containerSectionSizeOffset.value(), 2);
-		toBigEndian(containerSectionSize, r);
+		if (const auto containerSectionSize = ret.bytecode.size() - preContainerSectionBytecodeSize;
+			containerSectionSize > 0)
+		{
+			bytesRef r(ret.bytecode.data() + containerSectionSizeOffset.value(), 2);
+			toBigEndian(containerSectionSize, r);
+		}
 	}
 
 	for (auto const& [bytecodeOffset, ref]: tagRef)

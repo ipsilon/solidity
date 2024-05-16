@@ -1551,16 +1551,17 @@ void IRGeneratorForStatements::endVisit(FunctionCall const& _functionCall)
 		m_context.subObjectsCreated().insert(contract);
 
 		Whiskers t(R"(
-			let <memPos> := <allocateUnbounded>()
 			<?eof>
-				let <argPos> := <memPos>
+				let <argPos> := <allocateUnbounded>()
 				let <memEnd> := <abiEncode>(<argPos><constructorParams>)
 				let <argSize> := sub(<memEnd>, <argPos>)
-				let <address> := eofcreate("<object>", <value>, 1, <argPos>, <argSize>)
+				let <address> := eofcreate("<object>", <value>, <salt>, <argPos>, <argSize>)
 			<!eof>
+				let <memPos> := <allocateUnbounded>()
 				let <argPos> := add(<memPos>, datasize("<object>"))
 				if or(gt(<argPos>, 0xffffffffffffffff), lt(<argPos>, <memPos>)) { <panic>() }
 				datacopy(<memPos>, dataoffset("<object>"), datasize("<object>"))
+				let <memEnd> := <abiEncode>(<argPos><constructorParams>)
 
 				<?saltSet>
 					let <address> := create2(<value>, <memPos>, sub(<memEnd>, <memPos>), <salt>)
@@ -1591,8 +1592,10 @@ void IRGeneratorForStatements::endVisit(FunctionCall const& _functionCall)
 		t("constructorParams", joinHumanReadablePrefixed(constructorParams));
 		t("value", functionType->valueSet() ? IRVariable(_functionCall.expression()).part("value").name() : "0");
 		t("saltSet", functionType->saltSet());
-		if (functionType->saltSet() && !m_context.eofVersion().has_value())
+		if (functionType->saltSet())
 			t("salt", IRVariable(_functionCall.expression()).part("salt").name());
+		else if (m_context.eofVersion().has_value()) // Set salt to 0 if not defined.
+			t("salt", "0");
 		solAssert(IRVariable(_functionCall).stackSlots().size() == 1);
 		t("address", IRVariable(_functionCall).commaSeparatedList());
 		t("isTryCall", _functionCall.annotation().tryCall);
