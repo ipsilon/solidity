@@ -1855,7 +1855,7 @@ void IRGeneratorForStatements::endVisit(MemberAccess const& _memberAccess)
 			solAssert(dynamic_cast<AddressType const&>(*_memberAccess.expression().annotation().type).stateMutability() == StateMutability::Payable);
 			define(IRVariable{_memberAccess}.part("address"), _memberAccess.expression());
 		}
-		else if (std::set<std::string>{"call", "callcode", "delegatecall", "staticcall"}.count(member))
+		else if (std::set<std::string>{"call", "extcall", "callcode", "delegatecall", "staticcall"}.count(member))
 			define(IRVariable{_memberAccess}.part("address"), _memberAccess.expression());
 		else
 			solAssert(false, "Invalid member access to address");
@@ -2855,7 +2855,10 @@ void IRGeneratorForStatements::appendBareCall(
 	if (funKind == FunctionType::Kind::BareCall)
 	{
 		templ("value", funType.valueSet() ? IRVariable(_functionCall.expression()).part("value").name() : "0");
-		templ("call", "call");
+		if (eof)
+			templ("call", "extcall");
+		else
+			templ("call", "call");
 	}
 	else
 	{
