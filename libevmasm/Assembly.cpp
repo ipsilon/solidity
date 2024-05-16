@@ -1039,6 +1039,7 @@ LinkerObject const& Assembly::assemble() const
 	};
 
 	std::optional<size_t> containerSectionSizeOffset;
+	std::optional<size_t> containerSectionNumOffset;
 
 	// Insert EOF1 header.
 	if (eof)
@@ -1063,7 +1064,8 @@ LinkerObject const& Assembly::assemble() const
 		if (!m_subs.empty())
 		{
 			ret.bytecode.push_back(0x03);
-			appendBigEndianUint16(ret.bytecode, m_subs.size());
+			containerSectionNumOffset = ret.bytecode.size();
+			appendBigEndianUint16(ret.bytecode, 0xFFFFu);
 			containerSectionSizeOffset = ret.bytecode.size();
 			appendBigEndianUint16(ret.bytecode, 0u); // length of sub containers section
 		}
@@ -1107,7 +1109,7 @@ LinkerObject const& Assembly::assemble() const
 		++bytesRequiredForCode; ///< Additional INVALID marker.
 
 	unsigned bytesRequiredIncludingDataAndSubsUpperBound = headerSize + bytesRequiredForCode + bytesRequiredForDataAndSubsUpperBound;
-	unsigned bytesPerDataRef = numberEncodingSize(bytesRequiredIncludingDataAndSubsUpperBound);
+	unsigned bytesPerDataRef = !eof ? numberEncodingSize(bytesRequiredIncludingDataAndSubsUpperBound) : 1;
 	uint8_t dataRefPush = static_cast<uint8_t>(pushInstruction(bytesPerDataRef));
 	ret.bytecode.reserve(bytesRequiredIncludingDataAndSubsUpperBound);
 
@@ -1156,11 +1158,13 @@ LinkerObject const& Assembly::assemble() const
 					break;
 				}
 				case PushData:
+					assertThrow(!eof, AssemblyException, "Push data in EOF code");
 					ret.bytecode.push_back(dataRefPush);
 					dataRef.insert(std::make_pair(h256(i.data()), ret.bytecode.size()));
 					ret.bytecode.resize(ret.bytecode.size() + bytesPerDataRef);
 					break;
 				case PushSub:
+					assertThrow(!eof, AssemblyException, "Push sub in EOF code");
 					assertThrow(i.data() <= std::numeric_limits<size_t>::max(), AssemblyException, "");
 					ret.bytecode.push_back(dataRefPush);
 					subRef.insert(std::make_pair(static_cast<size_t>(i.data()), ret.bytecode.size()));
@@ -1168,6 +1172,7 @@ LinkerObject const& Assembly::assemble() const
 					break;
 				case PushSubSize:
 				{
+					assertThrow(!eof, AssemblyException, "Push sub size in EOF code");
 					assertThrow(i.data() <= std::numeric_limits<size_t>::max(), AssemblyException, "");
 					auto s = subAssemblyById(static_cast<size_t>(i.data()))->assemble().bytecode.size();
 					i.setPushedValue(u256(s));
@@ -1180,6 +1185,7 @@ LinkerObject const& Assembly::assemble() const
 				}
 				case PushProgramSize:
 				{
+					assertThrow(!eof, AssemblyException, "Push program size in EOF code");
 					ret.bytecode.push_back(dataRefPush);
 					sizeRef.push_back(static_cast<unsigned>(ret.bytecode.size()));
 					ret.bytecode.resize(ret.bytecode.size() + bytesPerDataRef);
@@ -1268,16 +1274,16 @@ LinkerObject const& Assembly::assemble() const
 				{
 					assertThrow(eof, AssemblyException, "Eof create (EOFCREATE) in non-EOF code");
 					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::EOFCREATE));
-					ret.bytecode.push_back(static_cast<uint8_t>(i.data()));
 					subRef.insert(std::make_pair(static_cast<size_t>(i.data()), ret.bytecode.size()));
+					ret.bytecode.push_back(static_cast<uint8_t>(i.data()));
 					break;
 				}
 				case ReturnContract:
 				{
 					assertThrow(eof, AssemblyException, "Return contract (RETURNCONTRACT) in non-EOF code");
 					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::RETURNCONTRACT));
-					ret.bytecode.push_back(static_cast<uint8_t>(i.data()));
 					subRef.insert(std::make_pair(static_cast<size_t>(i.data()), ret.bytecode.size()));
+					ret.bytecode.push_back(static_cast<uint8_t>(i.data()));
 					break;
 				}
 				case RelativeJump:
@@ -1312,7 +1318,7 @@ LinkerObject const& Assembly::assemble() const
 		// Append an INVALID here to help tests find miscompilation.
 		ret.bytecode.push_back(static_cast<uint8_t>(Instruction::INVALID));
 
-	std::map<LinkerObject, size_t> subAssemblyOffsets;
+	std::map<LinkerObject, std::pair<size_t, uint8_t>> subAssemblyOffsets;
 	size_t preContainerSectionBytecodeSize = ret.bytecode.size();
 	for (auto const& [subIdPath, bytecodeOffset]: subRef)
 	{
@@ -1321,27 +1327,44 @@ LinkerObject const& Assembly::assemble() const
 
 		// In order for de-duplication to kick in, not only must the bytecode be identical, but
 		// link and immutables references as well.
-		if (size_t* subAssemblyOffset = util::valueOrNullptr(subAssemblyOffsets, subObject))
+		const auto it = subAssemblyOffsets.find(subObject);
+		if (it != subAssemblyOffsets.end())
 		{
 			if (!eof)
-				toBigEndian(*subAssemblyOffset, r);
+				toBigEndian(it->second.first, r);
+			else
+				r[0] = static_cast<uint8_t>(it->second.second);
 		}
 		else
 		{
 			if (!eof)
 				toBigEndian(ret.bytecode.size(), r);
-			subAssemblyOffsets[subObject] = ret.bytecode.size();
+			else
+				r[0] = static_cast<uint8_t>(subIdPath);
+
+			subAssemblyOffsets[subObject] = {ret.bytecode.size(), subIdPath};
 			ret.bytecode += subObject.bytecode;
 		}
 		for (auto const& ref: subObject.linkReferences)
-			ret.linkReferences[ref.first + subAssemblyOffsets[subObject]] = ref.second;
+			ret.linkReferences[ref.first + subAssemblyOffsets[subObject].first] = ref.second;
 	}
 
 	if (eof)
 	{
+		// Fill the num_container_sections
+		const auto numContainers = subAssemblyOffsets.size();
+		if (containerSectionNumOffset.has_value())
+		{
+			bytesRef r(ret.bytecode.data() + containerSectionNumOffset.value(), 2);
+			toBigEndian(numContainers, r);
+		}
+
+		// Fill the container_size
 		if (const auto containerSectionSize = ret.bytecode.size() - preContainerSectionBytecodeSize;
 			containerSectionSize > 0)
 		{
+			assertThrow(numContainers > 0, AssemblyException, "Zero subcontainers but container section size > 0");
+
 			bytesRef r(ret.bytecode.data() + containerSectionSizeOffset.value(), 2);
 			toBigEndian(containerSectionSize, r);
 		}
