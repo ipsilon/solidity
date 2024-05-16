@@ -58,7 +58,7 @@ evmc::VM& EVMHost::getVM(std::string const& _path)
 				std::cerr << ":" << std::endl << errorMsg;
 			std::cerr << std::endl;
 		}
-		vms[_path]->set_option("trace", "1");
+		// vms[_path]->set_option("trace", "1");
 		vms[_path]->set_option("validate_eof", "1");
 	}
 
