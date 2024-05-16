@@ -2699,10 +2699,11 @@ void IRGeneratorForStatements::appendExternalFunctionCall(
 	size_t encodedHeadSize = 0;
 	for (auto const& t: returnInfo.returnTypes)
 		encodedHeadSize += t->decodingType()->calldataHeadSize();
-	bool const checkExtcodesize =
-		encodedHeadSize == 0 ||
+	bool const checkExtcodesize = (!m_context.eofVersion().has_value()) &&
+		(encodedHeadSize == 0 ||
 		!m_context.evmVersion().supportsReturndata() ||
-		m_context.revertStrings() >= RevertStrings::Debug;
+		m_context.revertStrings() >= RevertStrings::Debug);
+
 	templ("checkExtcodesize", checkExtcodesize);
 
 	templ("pos", m_context.newYulVariable());
