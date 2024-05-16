@@ -1034,8 +1034,7 @@ LinkerObject const& Assembly::assemble() const
 		}
 	};
 
-	std::optional<size_t> containerSectionSizeOffset;
-	std::optional<size_t> containerSectionNumOffset;
+	size_t startOfContainerSectionHeader = 0;
 
 	// Insert EOF1 header.
 	if (eof)
@@ -1057,14 +1056,15 @@ LinkerObject const& Assembly::assemble() const
 			appendBigEndianUint16(ret.bytecode, 0u); // placeholder for length of code
 		}
 
-		if (!m_subs.empty())
-		{
-			ret.bytecode.push_back(0x03);
-			containerSectionNumOffset = ret.bytecode.size();
-			appendBigEndianUint16(ret.bytecode, 0xFFFFu);
-			containerSectionSizeOffset = ret.bytecode.size();
-			appendBigEndianUint16(ret.bytecode, 0u); // length of sub containers section
-		}
+		startOfContainerSectionHeader = ret.bytecode.size();
+//		if (!m_subs.empty())
+//		{
+//			ret.bytecode.push_back(0x03);
+//			containerSectionNumOffset = ret.bytecode.size();
+//			appendBigEndianUint16(ret.bytecode, 0xFFFFu);
+//			containerSectionSizeOffset = ret.bytecode.size();
+//			appendBigEndianUint16(ret.bytecode, 0u); // length of sub containers section
+//		}
 
 		ret.bytecode.push_back(0x04); // kind=data
 		dataSectionSizeOffset = ret.bytecode.size();
@@ -1154,7 +1154,7 @@ LinkerObject const& Assembly::assemble() const
 					break;
 				}
 				case PushData:
-					assertThrow(!eof, AssemblyException, "Push data in EOF code");
+					// assertThrow(!eof, AssemblyException, "Push data in EOF code");
 					ret.bytecode.push_back(dataRefPush);
 					dataRef.insert(std::make_pair(h256(i.data()), ret.bytecode.size()));
 					ret.bytecode.resize(ret.bytecode.size() + bytesPerDataRef);
@@ -1314,8 +1314,8 @@ LinkerObject const& Assembly::assemble() const
 		// Append an INVALID here to help tests find miscompilation.
 		ret.bytecode.push_back(static_cast<uint8_t>(Instruction::INVALID));
 
-	std::map<LinkerObject, std::pair<size_t, uint8_t>> subAssemblyOffsets;
-	size_t preContainerSectionBytecodeSize = ret.bytecode.size();
+	std::map<LinkerObject, size_t> subAssemblyOffsets;
+	std::map<size_t, size_t> containerSizes;
 	for (auto const& [subIdPath, bytecodeOffset]: subRef)
 	{
 		LinkerObject subObject = subAssemblyById(subIdPath)->assemble();
@@ -1327,9 +1327,9 @@ LinkerObject const& Assembly::assemble() const
 		if (it != subAssemblyOffsets.end())
 		{
 			if (!eof)
-				toBigEndian(it->second.first, r);
+				toBigEndian(it->second, r);
 			else
-				r[0] = static_cast<uint8_t>(it->second.second);
+				r[0] = static_cast<uint8_t>(it->second);
 		}
 		else
 		{
@@ -1338,32 +1338,12 @@ LinkerObject const& Assembly::assemble() const
 			else
 				r[0] = static_cast<uint8_t>(subIdPath);
 
-			subAssemblyOffsets[subObject] = {ret.bytecode.size(), subIdPath};
+			subAssemblyOffsets[subObject] = !eof ? ret.bytecode.size() : subIdPath;
 			ret.bytecode += subObject.bytecode;
+			containerSizes[subIdPath] = subObject.bytecode.size();
 		}
 		for (auto const& ref: subObject.linkReferences)
-			ret.linkReferences[ref.first + subAssemblyOffsets[subObject].first] = ref.second;
-	}
-
-	if (eof)
-	{
-		// Fill the num_container_sections
-		const auto numContainers = subAssemblyOffsets.size();
-		if (containerSectionNumOffset.has_value())
-		{
-			bytesRef r(ret.bytecode.data() + containerSectionNumOffset.value(), 2);
-			toBigEndian(numContainers, r);
-		}
-
-		// Fill the container_size
-		if (const auto containerSectionSize = ret.bytecode.size() - preContainerSectionBytecodeSize;
-			containerSectionSize > 0)
-		{
-			assertThrow(numContainers > 0, AssemblyException, "Zero subcontainers but container section size > 0");
-
-			bytesRef r(ret.bytecode.data() + containerSectionSizeOffset.value(), 2);
-			toBigEndian(containerSectionSize, r);
-		}
+			ret.linkReferences[ref.first + subAssemblyOffsets[subObject]] = ref.second;
 	}
 
 	for (auto const& [bytecodeOffset, ref]: tagRef)
@@ -1416,6 +1396,31 @@ LinkerObject const& Assembly::assemble() const
 			tagInfo.params,
 			tagInfo.returns
 		};
+	}
+
+	if (eof)
+	{
+		// Fill the num_container_sections
+		const auto numContainers = subAssemblyOffsets.size();
+		if (numContainers > 0)
+		{
+			bytes containerSectionHeader = {};
+			containerSectionHeader.push_back(0x03);
+			appendBigEndianUint16(containerSectionHeader, numContainers);
+
+			assertThrow(numContainers == containerSizes.size(), AssemblyException, "Invalid container size");
+
+			for (auto s : containerSizes)
+				appendBigEndianUint16(containerSectionHeader, s.second);
+
+			ret.bytecode.insert(ret.bytecode.begin() + static_cast<int64_t>(startOfContainerSectionHeader),
+								containerSectionHeader.begin(), containerSectionHeader.end());
+
+			assertThrow(dataSectionSizeOffset.has_value(), AssemblyException, "Invalid data section size offset");
+			dataSectionSizeOffset.value() += containerSectionHeader.size();
+		}
+		else
+			assertThrow(0 == containerSizes.size(), AssemblyException, "Invalid container size");
 	}
 
 	auto const dataStart = ret.bytecode.size();
