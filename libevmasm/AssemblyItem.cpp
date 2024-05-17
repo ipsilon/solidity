@@ -187,6 +187,8 @@ size_t AssemblyItem::bytesRequired(size_t _addressLength, Precision _precision) 
 		return 2;
 	case ReturnContract:
 		return 2;
+	case DataLoadN:
+		return 2;
 	default:
 		break;
 	}
@@ -250,6 +252,7 @@ size_t AssemblyItem::returnValues() const
 	case RetF:
 	case ReturnContract:
 		return 0;
+	case DataLoadN:
 	case EofCreate:
 		return 1;
 	default:

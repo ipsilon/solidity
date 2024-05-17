@@ -494,6 +494,8 @@ u256 EVMInstructionInterpreter::eval(
 	case Instruction::SWAP14:
 	case Instruction::SWAP15:
 	case Instruction::SWAP16:
+	case Instruction::DATALOAD:
+	case Instruction::DATALOADN:
 	case Instruction::EOFCREATE:
 	case Instruction::RETURNCONTRACT:
 	case Instruction::CALLF:

@@ -184,6 +184,9 @@ enum class Instruction: uint8_t
 	LOG3,                     ///< Makes a log entry; 3 topics.
 	LOG4,                     ///< Makes a log entry; 4 topics.
 
+	DATALOAD = 0xd0,
+	DATALOADN = 0xd1,
+
 	RJUMP = 0xe0,
 	RJUMPI = 0xe1,
 	RJUMPV = 0xe2,

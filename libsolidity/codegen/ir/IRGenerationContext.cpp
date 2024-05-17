@@ -95,6 +95,7 @@ void IRGenerationContext::registerImmutableVariable(VariableDeclaration const& _
 	solAssert(m_reservedMemory.has_value(), "Reserved memory has already been reset.");
 	m_immutableVariables[&_variable] = CompilerUtils::generalPurposeMemoryStart + *m_reservedMemory;
 	solAssert(_variable.annotation().type->memoryHeadSize() == 32, "Memory writes might overlap.");
+	m_immutableVariablesDataOffsets[&_variable] = *m_reservedMemory;
 	*m_reservedMemory += _variable.annotation().type->memoryHeadSize();
 }
 
