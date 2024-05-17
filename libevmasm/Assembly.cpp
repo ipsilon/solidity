@@ -689,6 +689,11 @@ AssemblyItem Assembly::newImmutableAssignment(std::string const& _identifier)
 	return AssemblyItem{AssignImmutable, h};
 }
 
+AssemblyItem Assembly::newDataLoadN(size_t offset)
+{
+	return AssemblyItem{DataLoadN, offset};
+}
+
 Assembly& Assembly::optimise(OptimiserSettings const& _settings)
 {
 	optimiseInternal(_settings, {});
@@ -1001,6 +1006,20 @@ LinkerObject const& Assembly::assemble() const
 			if (i.type() == PushSub || i.type() == EofCreate || i.type() == ReturnContract)
 				bytesRequiredForSubs += static_cast<unsigned>(subAssemblyById(static_cast<size_t>(i.data()))->assemble().bytecode.size());
 	unsigned bytesRequiredForDataUpperBound = static_cast<unsigned>(m_auxiliaryData.size());
+
+	size_t maxDataLoadNOffset = 0;
+	for (auto&& codeSection: m_codeSections)
+		for (AssemblyItem const& i: codeSection.items)
+			if (i.type() == DataLoadN)
+			{
+				const auto offset = static_cast<size_t>(i.data());
+				if (offset > maxDataLoadNOffset)
+					maxDataLoadNOffset = offset;
+
+			}
+
+	bytesRequiredForDataUpperBound += maxDataLoadNOffset + 32;
+
 	// Some of these may be unreferenced and not actually end up in data.
 	for (auto const& dataItem: m_data)
 		bytesRequiredForDataUpperBound += static_cast<unsigned>(dataItem.second.size());
@@ -1035,6 +1054,7 @@ LinkerObject const& Assembly::assemble() const
 	};
 
 	size_t startOfContainerSectionHeader = 0;
+	size_t immutableDataSize = 0;
 
 	// Insert EOF1 header.
 	if (eof)
@@ -1193,6 +1213,7 @@ LinkerObject const& Assembly::assemble() const
 					ret.bytecode.resize(ret.bytecode.size() + 20);
 					break;
 				case PushImmutable:
+					assertThrow(!eof, AssemblyException, "Push immutable in EOF code");
 					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::PUSH32));
 					// Maps keccak back to the "identifier" std::string of that immutable.
 					ret.immutableReferences[i.data()].first = m_immutables.at(i.data());
@@ -1206,6 +1227,7 @@ LinkerObject const& Assembly::assemble() const
 					break;
 				case AssignImmutable:
 				{
+					assertThrow(!eof, AssemblyException, "Assign immutable in EOF code");
 					// Expect 2 elements on stack (source, dest_base)
 					auto const& offsets = immutableReferencesBySub[i.data()].second;
 					for (auto [j, offset]: offsets | ranges::views::enumerate)
@@ -1228,6 +1250,13 @@ LinkerObject const& Assembly::assemble() const
 						ret.bytecode.push_back(uint8_t(Instruction::POP));
 					}
 					immutableReferencesBySub.erase(i.data());
+					break;
+				}
+				case DataLoadN:
+				{
+					ret.bytecode.push_back(uint8_t(Instruction::DATALOADN));
+					appendBigEndianUint16(ret.bytecode, i.data());
+					immutableDataSize += 32;
 					break;
 				}
 				case PushDeployTimeAddress:
@@ -1440,7 +1469,7 @@ LinkerObject const& Assembly::assemble() const
 	for (unsigned pos: sizeRef)
 		setBigEndian(ret.bytecode, pos, bytesPerDataRef, ret.bytecode.size());
 
-	auto dataLength = ret.bytecode.size() - dataStart;
+	auto dataLength = ret.bytecode.size() - dataStart + immutableDataSize;
 	assertThrow(
 		bytesRequiredForDataAndSubsUpperBound >= dataLength,
 		AssemblyException,

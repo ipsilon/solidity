@@ -3271,7 +3271,19 @@ IRVariable IRGeneratorForStatements::readFromLValue(IRLValue const& _lvalue)
 					")\n";
 			}
 			else
-				define(result) << "loadimmutable(\"" << std::to_string(_immutable.variable->id()) << "\")\n";
+			{
+				if (!m_context.eofVersion().has_value())
+					define(result) << "loadimmutable(\"" << std::to_string(_immutable.variable->id()) << "\")\n";
+				else
+				{
+					if (const auto it = m_context.immutableVariableDataOffsets().find(_immutable.variable);
+						it != m_context.immutableVariableDataOffsets().end())
+					{
+						define(result) << "dataloadn(\"" << std::to_string(it->second) << "\")\n";
+					}
+				}
+
+			}
 		},
 		[&](IRLValue::Tuple const&) {
 			solAssert(false, "Attempted to read from tuple lvalue.");

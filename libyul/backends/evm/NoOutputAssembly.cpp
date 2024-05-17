@@ -140,6 +140,10 @@ void NoOutputAssembly::appendReturnContractCall(ContainerID)
 {
 	// TODO: Implement
 }
+void NoOutputAssembly::appendDataLoadN(size_t)
+{
+	// TODO: Implement
+}
 
 void NoOutputAssembly::appendDataOffset(std::vector<AbstractAssembly::SubID> const&)
 {

@@ -940,7 +940,7 @@ std::string IRGenerator::deployCode(ContractDefinition const& _contract)
 {
 	Whiskers t(R"X(
 		<?eof>
-			returncontract("<object>", 0, 0)
+			returncontract("<object>", <immutablesOffset>, <immutablesSize>)
 		<!eof>
 			let <codeOffset> := <allocateUnbounded>()
 			codecopy(<codeOffset>, dataoffset("<object>"), datasize("<object>"))
@@ -950,12 +950,19 @@ std::string IRGenerator::deployCode(ContractDefinition const& _contract)
 			return(<codeOffset>, datasize("<object>"))
 		</eof>
 	)X");
-	t("eof", m_context.eofVersion().has_value());
-	t("allocateUnbounded", m_utils.allocateUnboundedFunction());
-	t("codeOffset", m_context.newYulVariable());
+	const auto eof = m_context.eofVersion().has_value();
+	t("eof", eof);
+	if (!eof)
+	{
+		t("allocateUnbounded", m_utils.allocateUnboundedFunction());
+		t("codeOffset", m_context.newYulVariable());
+	}
+
 	t("object", IRNames::deployedObject(_contract));
 
 	std::vector<std::map<std::string, std::string>> immutables;
+	size_t immutablesOffset = 0;
+	size_t immutablesSize = 0;
 	if (_contract.isLibrary())
 	{
 		solAssert(ContractType(_contract).immutableVariables().empty(), "");
@@ -966,16 +973,45 @@ std::string IRGenerator::deployCode(ContractDefinition const& _contract)
 
 	}
 	else
-		for (VariableDeclaration const* immutable: ContractType(_contract).immutableVariables())
+	{
+		if (!eof)
 		{
-			solUnimplementedAssert(immutable->type()->isValueType());
-			solUnimplementedAssert(immutable->type()->sizeOnStack() == 1);
-			immutables.emplace_back(std::map<std::string, std::string>{
-				{"immutableName"s, std::to_string(immutable->id())},
-				{"value"s, "mload(" + std::to_string(m_context.immutableMemoryOffset(*immutable)) + ")"}
-			});
+			for (VariableDeclaration const* immutable: ContractType(_contract).immutableVariables())
+			{
+				solUnimplementedAssert(immutable->type()->isValueType());
+				solUnimplementedAssert(immutable->type()->sizeOnStack() == 1);
+				immutables.emplace_back(std::map<std::string, std::string>{
+					{"immutableName"s, std::to_string(immutable->id())},
+					{"value"s, "mload(" + std::to_string(m_context.immutableMemoryOffset(*immutable)) + ")"}
+				});
+			}
 		}
-	t("immutables", std::move(immutables));
+		else
+		{
+			const auto& immutableVariables = ContractType(_contract).immutableVariables();
+			for (VariableDeclaration const* immutable: immutableVariables)
+			{
+				solUnimplementedAssert(immutable->type()->isValueType());
+				solUnimplementedAssert(immutable->type()->sizeOnStack() == 1);
+			}
+
+			const auto numImmutables = immutableVariables.size();
+			if (numImmutables > 0)
+			{
+				immutablesOffset = m_context.immutableMemoryOffset(*immutableVariables[0]);
+				// TODO: Not sure it it always is 32 bytes but
+				// TODO: solUnimplementedAssert(immutable->type()->sizeOnStack() == 1) looks like it assures it.
+				immutablesSize = numImmutables * 32;
+			}
+		}
+	}
+	if (!eof)
+		t("immutables", std::move(immutables));
+	if (eof)
+	{
+		t("immutablesOffset", std::to_string(immutablesOffset));
+		t("immutablesSize", std::to_string(immutablesSize));
+	}
 	return t.render();
 }
 
@@ -1104,7 +1140,8 @@ void IRGenerator::resetContext(ContractDefinition const& _contract, ExecutionCon
 		m_context.revertStrings(),
 		m_context.sourceIndices(),
 		m_context.debugInfoSelection(),
-		m_context.soliditySourceProvider()
+		m_context.soliditySourceProvider(),
+		m_context.immutableVariableDataOffsets()
 	);
 	m_context = std::move(newContext);
 

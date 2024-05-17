@@ -110,6 +110,7 @@ public:
 	AssemblyItem newPushLibraryAddress(std::string const& _identifier);
 	AssemblyItem newPushImmutable(std::string const& _identifier);
 	AssemblyItem newImmutableAssignment(std::string const& _identifier);
+	AssemblyItem newDataLoadN(size_t offset);
 
 	AssemblyItem const& append(AssemblyItem _i);
 	AssemblyItem const& append(bytes const& _data) { return append(newData(_data)); }
@@ -122,6 +123,8 @@ public:
 	void appendLibraryAddress(std::string const& _identifier) { append(newPushLibraryAddress(_identifier)); }
 	void appendImmutable(std::string const& _identifier) { append(newPushImmutable(_identifier)); }
 	void appendImmutableAssignment(std::string const& _identifier) { append(newImmutableAssignment(_identifier)); }
+	void appendDataLoadN(size_t offset) { append(newDataLoadN(offset));}
+
 
 	void appendVerbatim(bytes _data, size_t _arguments, size_t _returnVariables)
 	{

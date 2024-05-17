@@ -222,6 +222,11 @@ void EthAssemblyAdapter::appendImmutable(std::string const& _identifier)
 	m_assembly.appendImmutable(_identifier);
 }
 
+void EthAssemblyAdapter::appendDataLoadN(size_t dataOffset)
+{
+	m_assembly.appendDataLoadN(dataOffset);
+}
+
 void EthAssemblyAdapter::appendImmutableAssignment(std::string const& _identifier)
 {
 	m_assembly.appendImmutableAssignment(_identifier);
