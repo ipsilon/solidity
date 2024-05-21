@@ -1011,18 +1011,18 @@ LinkerObject const& Assembly::assemble() const
 				bytesRequiredForSubs += static_cast<unsigned>(subAssemblyById(static_cast<size_t>(i.data()))->assemble().bytecode.size());
 	unsigned bytesRequiredForDataUpperBound = static_cast<unsigned>(m_auxiliaryData.size());
 
-	size_t maxDataLoadNOffset = 0;
+	std::optional<size_t> maxDataLoadNOffset = std::nullopt;
 	for (auto&& codeSection: m_codeSections)
 		for (AssemblyItem const& i: codeSection.items)
 			if (i.type() == DataLoadN)
 			{
 				const auto offset = static_cast<size_t>(i.data());
-				if (offset > maxDataLoadNOffset)
+				if (!maxDataLoadNOffset.has_value() || offset > maxDataLoadNOffset.value())
 					maxDataLoadNOffset = offset;
 
 			}
 
-	bytesRequiredForDataUpperBound += maxDataLoadNOffset + 32;
+	bytesRequiredForDataUpperBound += maxDataLoadNOffset.has_value() ? (maxDataLoadNOffset.value() + 32) : 0;
 
 	// Some of these may be unreferenced and not actually end up in data.
 	for (auto const& dataItem: m_data)
@@ -1058,7 +1058,6 @@ LinkerObject const& Assembly::assemble() const
 	};
 
 	size_t startOfContainerSectionHeader = 0;
-	size_t immutableDataSize = 0;
 
 	// Insert EOF1 header.
 	if (eof)
@@ -1260,7 +1259,6 @@ LinkerObject const& Assembly::assemble() const
 				{
 					ret.bytecode.push_back(uint8_t(Instruction::DATALOADN));
 					appendBigEndianUint16(ret.bytecode, i.data());
-					immutableDataSize += 32;
 					break;
 				}
 				case PushDeployTimeAddress:
@@ -1473,7 +1471,7 @@ LinkerObject const& Assembly::assemble() const
 	for (unsigned pos: sizeRef)
 		setBigEndian(ret.bytecode, pos, bytesPerDataRef, ret.bytecode.size());
 
-	auto dataLength = ret.bytecode.size() - dataStart + immutableDataSize;
+	auto dataLength = ret.bytecode.size() - dataStart + (maxDataLoadNOffset.has_value() ? (maxDataLoadNOffset.value() + 32) : 0);
 	assertThrow(
 		bytesRequiredForDataAndSubsUpperBound >= dataLength,
 		AssemblyException,

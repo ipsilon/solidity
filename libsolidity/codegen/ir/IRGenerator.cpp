@@ -531,27 +531,37 @@ std::string IRGenerator::generateGetter(VariableDeclaration const& _varDecl)
 		{
 			solAssert(paramTypes.empty(), "");
 			solUnimplementedAssert(type->sizeOnStack() == 1);
-			return Whiskers(R"(
+
+			auto t = Whiskers(R"(
 				<astIDComment><sourceLocationComment>
 				function <functionName>() -> rval {
-					rval := loadimmutable("<id>")
+					<?eof>
+						rval := dataloadn("<id>")
+					<!eof>
+						rval := loadimmutable("<id>")
+					</eof>
 				}
 				<contractSourceLocationComment>
-			)")
-			(
-				"astIDComment",
-				m_context.debugInfoSelection().astID ?
-					"/// @ast-id " + std::to_string(_varDecl.id()) + "\n" :
-					""
-			)
-			("sourceLocationComment", dispenseLocationComment(_varDecl))
-			(
-				"contractSourceLocationComment",
-				dispenseLocationComment(m_context.mostDerivedContract())
-			)
-			("functionName", functionName)
-			("id", std::to_string(_varDecl.id()))
-			.render();
+				)");
+			t("astIDComment", m_context.debugInfoSelection().astID ? "/// @ast-id " + std::to_string(_varDecl.id()) + "\n" : "");
+			t("sourceLocationComment", dispenseLocationComment(_varDecl));
+			t("contractSourceLocationComment", dispenseLocationComment(m_context.mostDerivedContract()));
+			const auto eof = m_context.eofVersion().has_value();
+			t("eof", eof);
+			t("functionName", functionName);
+
+			if (!eof)
+				t("id", std::to_string(_varDecl.id()));
+			else
+			{
+				if (const auto it = m_context.immutableVariableDataOffsets().find(&_varDecl);
+					it != m_context.immutableVariableDataOffsets().end())
+					t("id", std::to_string(it->second));
+				else
+					solAssert(false, "Immutable declaration not found.");
+			}
+
+			return t.render();
 		}
 		else if (_varDecl.isConstant())
 		{
