@@ -1203,14 +1203,14 @@ void CommandLineParser::processArgs()
 		m_options.output.evmVersion = *versionOption;
 	}
 
-	if (m_args.count(g_strEOFVersion))
-	{
-		// Request as uint64_t, since uint8_t will be parsed as character by boost.
-		uint64_t versionOption = m_args[g_strEOFVersion].as<uint64_t>();
-		if (versionOption != 1)
-			solThrow(CommandLineValidationError, "Invalid option for --" + g_strEOFVersion + ": " + std::to_string(versionOption));
+	// if (m_args.count(g_strEOFVersion))
+	// {
+	// 	// Request as uint64_t, since uint8_t will be parsed as character by boost.
+	// 	uint64_t versionOption = m_args[g_strEOFVersion].as<uint64_t>();
+	// 	if (versionOption != 1)
+	// 		solThrow(CommandLineValidationError, "Invalid option for --" + g_strEOFVersion + ": " + std::to_string(versionOption));
 		m_options.output.eofVersion = 1;
-	}
+	// }
 
 	if (m_args.count(g_strNoOptimizeYul) > 0 && m_args.count(g_strOptimizeYul) > 0)
 		solThrow(
