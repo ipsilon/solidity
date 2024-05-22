@@ -1683,14 +1683,19 @@ void IRGeneratorForStatements::endVisit(FunctionCall const& _functionCall)
 			if iszero(<success>) { <forwardingRevert>() }
 			let <retVars> := <shl>(mload(0))
 		)");
-		templ("call", m_context.evmVersion().hasStaticCall() ? "staticcall" : "call");
+		const auto eof = m_context.eofVersion().has_value();
+
+		if (!eof)
+			templ("call", m_context.evmVersion().hasStaticCall() ? "staticcall" : "call");
+		else
+			templ("call", m_context.evmVersion().hasStaticCall() ? "extstaticcall" : "extcall");
 		templ("isCall", !m_context.evmVersion().hasStaticCall());
 		templ("shl", m_utils.shiftLeftFunction(offset * 8));
 		templ("allocateUnbounded", m_utils.allocateUnboundedFunction());
 		templ("pos", m_context.newYulVariable());
 		templ("end", m_context.newYulVariable());
 		templ("isECRecover", FunctionType::Kind::ECRecover == functionType->kind());
-		templ("eof", m_context.eofVersion().has_value());
+		templ("eof", eof);
 		if (FunctionType::Kind::ECRecover == functionType->kind())
 			templ("encodeArgs", m_context.abiFunctions().tupleEncoder(argumentTypes, parameterTypes));
 		else
