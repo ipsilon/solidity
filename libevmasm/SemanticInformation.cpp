@@ -503,6 +503,7 @@ SemanticInformation::Effect SemanticInformation::storage(Instruction _instructio
 	case Instruction::CREATE:
 	case Instruction::CREATE2:
 	case Instruction::SSTORE:
+	case Instruction::EOFCREATE:
 		return SemanticInformation::Write;
 
 	case Instruction::SLOAD:
@@ -524,6 +525,7 @@ SemanticInformation::Effect SemanticInformation::transientStorage(Instruction _i
 	case Instruction::CREATE:
 	case Instruction::CREATE2:
 	case Instruction::TSTORE:
+	case Instruction::EOFCREATE:
 		return SemanticInformation::Write;
 
 	case Instruction::TLOAD:
@@ -544,6 +546,7 @@ SemanticInformation::Effect SemanticInformation::otherState(Instruction _instruc
 	case Instruction::DELEGATECALL:
 	case Instruction::CREATE:
 	case Instruction::CREATE2:
+	case Instruction::EOFCREATE:
 	case Instruction::SELFDESTRUCT:
 	case Instruction::STATICCALL: // because it can affect returndatasize
 		// Strictly speaking, log0, .., log4 writes to the state, but the EVM cannot read it, so they
