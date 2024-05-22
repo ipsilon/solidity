@@ -320,10 +320,10 @@ std::map<YulString, BuiltinFunctionForEVM> createBuiltins(langutil::EVMVersion _
 				false,               // canBeRemoved
 				false,               // canBeRemovedIfNotMSize
 				true,                // cannotLoop
-				SideEffects::None,   // otherState
-				SideEffects::None,   // storage
+				SideEffects::Write,   // otherState
+				SideEffects::Write,   // storage
 				SideEffects::Write,  // memory
-				SideEffects::None    // transientStorage
+				SideEffects::Write    // transientStorage
 			},
 			{LiteralKind::String, std::nullopt, std::nullopt, std::nullopt, std::nullopt},
 			[](
