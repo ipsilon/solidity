@@ -5118,7 +5118,7 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PoolDeployer, NoDelegat
         address tokenA,
         address tokenB,
         uint24 fee
-    ) external override noDelegateCall returns (address pool) {
+    ) public override noDelegateCall returns (address pool) {
         require(tokenA != tokenB);
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         require(token0 != address(0));
@@ -5152,10 +5152,38 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PoolDeployer, NoDelegat
         feeAmountTickSpacing[fee] = tickSpacing;
         emit FeeAmountEnabled(fee, tickSpacing);
     }
+
+    function runTest() public {
+        TestERC20 t1 = new TestERC20{salt: 0x0000000000000000000000000000000000000000000000000000000000000001}(1000000000);
+        TestERC20 t2 = new TestERC20{salt: 0x0000000000000000000000000000000000000000000000000000000000000002}(1000000000);
+        IUniswapV3Pool pool = IUniswapV3Pool(createPool(address(t1), address(t2), 500));
+
+        TestUniswapV3Callee test = new TestUniswapV3Callee();
+        t1.approve(address(test), 1000000000);
+        t2.approve(address(test), 1000000000);
+        pool.initialize(761446703485210103287273052203988822378723970342);
+
+        test.mint(address(pool), address(this), int24(-1000), int24(1000), uint128(1000));
+
+        uint256 beforeSwap = t2.balanceOf(address(this));
+        test.swapExact0For1(address(pool), 1, address(this), 4295128740);
+        uint256 afterSwap = t2.balanceOf(address(this));
+
+        require(beforeSwap != afterSwap, 'WRO');
+    }
 }
 
 // ====
 // compileViaYul: true
 // ----
-// createPool(address,address,uint24): 0x0000000000000000000000000000000000000001, 0x0000000000000000000000000000000000000002, 500 -> 0xd7b1000715b0f3ce5887d8f33686fe7b0b21afb9
-// ~ emit PoolCreated(address,address,uint24,int24,address): #0x01, #0x02, #0x01f4, 0x0a, 0xd7b1000715b0f3ce5887d8f33686fe7b0b21afb9
+// runTest() ->
+// ~ emit PoolCreated(address,address,uint24,int24,address): #0xcae46d9f4daa25084df3a0195e879c6618c6e0ad, #0xf1d47afc539313eac647fef05d55b428d75acea3, #0x01f4, 0x0a, 0xe412ca678930cd807e741c51a65f29ff0720930a
+// ~ emit Approval(address,address,uint256) from 0xf1d47afc539313eac647fef05d55b428d75acea3: #0x52a8af63d2563cbad4065e22c86e92a170189aea, #0x47ca329f00fad0004175504de0168a11ca5053bc, 0x3b9aca00
+// ~ emit Approval(address,address,uint256) from 0xcae46d9f4daa25084df3a0195e879c6618c6e0ad: #0x52a8af63d2563cbad4065e22c86e92a170189aea, #0x47ca329f00fad0004175504de0168a11ca5053bc, 0x3b9aca00
+// ~ emit Initialize(uint160,int24) from 0xe412ca678930cd807e741c51a65f29ff0720930a: 0x85607379ff6f79edb3e272aaeae79d5263988d26, 0x0d56f8
+// ~ emit MintCallback(uint256,uint256) from 0x47ca329f00fad0004175504de0168a11ca5053bc: 0x00, 0x65
+// ~ emit Transfer(address,address,uint256) from 0xf1d47afc539313eac647fef05d55b428d75acea3: #0x52a8af63d2563cbad4065e22c86e92a170189aea, #0xe412ca678930cd807e741c51a65f29ff0720930a, 0x65
+// ~ emit Mint(address,address,int24,int24,uint128,uint256,uint256) from 0xe412ca678930cd807e741c51a65f29ff0720930a: #0x52a8af63d2563cbad4065e22c86e92a170189aea, #0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc18, #0x03e8, 0x47ca329f00fad0004175504de0168a11ca5053bc, 0x03e8, 0x00, 0x65
+// ~ emit SwapCallback(int256,int256) from 0x47ca329f00fad0004175504de0168a11ca5053bc: 0x01, 0x00
+// ~ emit Transfer(address,address,uint256) from 0xcae46d9f4daa25084df3a0195e879c6618c6e0ad: #0x52a8af63d2563cbad4065e22c86e92a170189aea, #0xe412ca678930cd807e741c51a65f29ff0720930a, 0x01
+// ~ emit Swap(address,address,int256,int256,uint160,uint128,int24) from 0xe412ca678930cd807e741c51a65f29ff0720930a: #0x47ca329f00fad0004175504de0168a11ca5053bc, #0x52a8af63d2563cbad4065e22c86e92a170189aea, 0x01, 0x00, 0x010d1fee2afe8561359d69a466, 0x03e8, 0x03e7
