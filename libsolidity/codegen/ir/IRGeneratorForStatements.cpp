@@ -1616,11 +1616,17 @@ void IRGeneratorForStatements::endVisit(FunctionCall const& _functionCall)
 		Whiskers templ(R"(
 			let <gas> := 0
 			if iszero(<value>) { <gas> := <callStipend> }
-			let <success> := call(<gas>, <address>, <value>, 0, 0, 0, 0)
+			<?eof>
+				let <success> := extcall(<address>, 0, 0, <value>)
+				<success> := iszero(<success>)
+			<!eof>
+				let <success> := call(<gas>, <address>, <value>, 0, 0, 0, 0)
+			</eof>
 			<?isTransfer>
 				if iszero(<success>) { <forwardingRevert>() }
 			</isTransfer>
 		)");
+		templ("eof", m_context.eofVersion().has_value());
 		templ("gas", m_context.newYulVariable());
 		templ("callStipend", toString(evmasm::GasCosts::callStipend));
 		templ("address", address);
