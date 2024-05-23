@@ -847,7 +847,8 @@ std::map<u256, u256> const& Assembly::optimiseInternal(
 		}
 	}
 
-	if (_settings.runConstantOptimiser)
+	// TODO: investigate for EOF
+	if (_settings.runConstantOptimiser && !m_eofVersion.has_value())
 		ConstantOptimisationMethod::optimiseConstants(
 			isCreation(),
 			isCreation() ? 1 : _settings.expectedExecutionsPerDeployment,
@@ -1141,7 +1142,7 @@ LinkerObject const& Assembly::assemble() const
 			switch (i.type())
 			{
 				case Operation:
-					if (i.instruction() == Instruction::RETURNCONTRACT || i.instruction() == Instruction::EOFCREATE)
+					if (i.instruction() == Instruction::CODECOPY)
 					{
 						(void)i;
 					}
