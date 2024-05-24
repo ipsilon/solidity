@@ -338,7 +338,9 @@ evmc::Result EVMHost::call(evmc_message const& _message) noexcept
 			bytes{0xff} +
 			bytes(std::begin(message.sender.bytes), std::end(message.sender.bytes)) +
 			bytes(std::begin(message.create2_salt.bytes), std::end(message.create2_salt.bytes)) +
-			keccak256(bytes(message.input_data, message.input_data + message.input_size)).asBytes()
+			keccak256(
+				message.kind == EVMC_CREATE2 ? bytes(message.input_data, message.input_data + message.input_size) :
+				bytes(message.code, message.code + message.code_size)).asBytes()
 		), h160::AlignRight);
 
 		message.recipient = convertToEVMC(createAddress);
