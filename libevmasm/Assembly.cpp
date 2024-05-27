@@ -1342,7 +1342,7 @@ LinkerObject const& Assembly::assemble() const
 		// Append an INVALID here to help tests find miscompilation.
 		ret.bytecode.push_back(static_cast<uint8_t>(Instruction::INVALID));
 
-	std::map<LinkerObject, size_t> subAssemblyOffsets;
+	std::map<LinkerObject, std::pair<size_t, size_t>> subAssemblyOffsets;
 	std::map<size_t, size_t> containerSizes;
 	for (auto const& [subIdPath, bytecodeOffset]: subRef)
 	{
@@ -1355,9 +1355,9 @@ LinkerObject const& Assembly::assemble() const
 		if (it != subAssemblyOffsets.end())
 		{
 			if (!eof)
-				toBigEndian(it->second, r);
+				toBigEndian(it->second.first, r);
 			else
-				r[0] = static_cast<uint8_t>(it->second);
+				r[0] = static_cast<uint8_t>(it->second.second);
 		}
 		else
 		{
@@ -1366,12 +1366,12 @@ LinkerObject const& Assembly::assemble() const
 			else
 				r[0] = static_cast<uint8_t>(subIdPath);
 
-			subAssemblyOffsets[subObject] = !eof ? ret.bytecode.size() : subIdPath;
+			subAssemblyOffsets[subObject] = {ret.bytecode.size(), subIdPath};
 			ret.bytecode += subObject.bytecode;
 			containerSizes[subIdPath] = subObject.bytecode.size();
 		}
 		for (auto const& ref: subObject.linkReferences)
-			ret.linkReferences[ref.first + subAssemblyOffsets[subObject]] = ref.second;
+			ret.linkReferences[ref.first + subAssemblyOffsets[subObject].first] = ref.second;
 	}
 
 	for (auto const& [bytecodeOffset, ref]: tagRef)
@@ -1446,6 +1446,15 @@ LinkerObject const& Assembly::assemble() const
 
 			assertThrow(dataSectionSizeOffset.has_value(), AssemblyException, "Invalid data section size offset");
 			dataSectionSizeOffset.value() += containerSectionHeader.size();
+
+			// We inserted some bytecode before first code section so all link references have to be updated too.
+			auto oldLinkRefs = ret.linkReferences;
+			std::map<size_t, std::string> newLinkRefs;
+
+			for (const auto& ref: oldLinkRefs)
+				newLinkRefs[ref.first + containerSectionHeader.size()] = ref.second;
+
+			ret.linkReferences = newLinkRefs;
 		}
 		else
 			assertThrow(0 == containerSizes.size(), AssemblyException, "Invalid container size");
