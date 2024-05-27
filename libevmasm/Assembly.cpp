@@ -868,7 +868,7 @@ namespace
 {
 uint16_t calcMaxStackHeight(std::vector<AssemblyItem> const& _items, uint16_t _args)
 {
-	uint16_t maxStackHeight = 0;
+	uint16_t maxStackHeight = _args;
 	std::stack<size_t> worklist;
 	std::vector<int32_t> stack_heights(_items.size(), -1);
 	stack_heights[0] = _args;
