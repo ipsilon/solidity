@@ -1676,6 +1676,10 @@ void IRGeneratorForStatements::endVisit(FunctionCall const& _functionCall)
 				let <success> := <call>(<gas>, <address> <?isCall>, 0</isCall>, <pos>, sub(<end>, <pos>), 0, 32)
 			</eof>
 			if iszero(<success>) { <forwardingRevert>() }
+			<?eof>
+				if iszero(eq(returndatasize(), 32)) { <forwardingRevert>() }
+				returndatacopy(0, 0, 32)
+			</eof>
 			let <retVars> := <shl>(mload(0))
 		)");
 		const auto eof = m_context.eofVersion().has_value();
