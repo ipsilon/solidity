@@ -59,7 +59,7 @@ public:
 	AbstractAssembly::FunctionID createFunction(uint8_t _args, uint8_t _rets) override;
 	void beginFunction(AbstractAssembly::FunctionID _functionID) override;
 	void endFunction() override;
-	void appendFunctionCall(FunctionID _functionID) override;
+	void appendFunctionCall(FunctionID _functionID, int _stackDiffAfter = 0) override;
 	void appendFunctionReturn() override;
 	void appendEofCreateCall(ContainerID _containerID) override;
 	void appendReturnContractCall(ContainerID _containerID) override;
