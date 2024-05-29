@@ -165,9 +165,10 @@ void EthAssemblyAdapter::appendFunctionReturn()
 	m_assembly.appendFunctionReturn();
 }
 
-void EthAssemblyAdapter::appendFunctionCall(FunctionID _functionID)
+void EthAssemblyAdapter::appendFunctionCall(FunctionID _functionID, int _stackDiffAfter)
 {
 	m_assembly.appendFunctionCall(_functionID);
+	m_assembly.adjustDeposit(_stackDiffAfter);
 }
 
 void EthAssemblyAdapter::appendEofCreateCall(ContainerID _containerID)

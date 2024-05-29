@@ -110,11 +110,8 @@ void OptimizedEVMCodeTransform::operator()(CFG::FunctionCall const& _call)
 	{
 		m_assembly.setSourceLocation(originLocationOf(_call));
 		if (m_dfg.useFunctions)
-		{
-			m_assembly.appendFunctionCall(m_builtinContext.functionIDs.at(&_call.function.get()));
-//			if (!_call.canContinue)
-//				m_assembly.appendInstruction(evmasm::Instruction::INVALID);
-		}
+			m_assembly.appendFunctionCall(m_builtinContext.functionIDs.at(&_call.function.get()),
+				!_call.canContinue ? static_cast<int>(_call.function.get().returns.size()) : 0);
 		else
 			m_assembly.appendJumpTo(
 				getFunctionLabel(_call.function),
