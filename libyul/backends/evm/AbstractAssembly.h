@@ -107,7 +107,7 @@ public:
 	virtual void beginFunction(FunctionID _functionID) = 0;
 	virtual void endFunction() = 0;
 
-	virtual void appendFunctionCall(FunctionID _functionID) = 0;
+	virtual void appendFunctionCall(FunctionID _functionID, int _stackDiffAfter = 0) = 0;
 	virtual void appendFunctionReturn() = 0;
 
 	virtual void appendEofCreateCall(ContainerID _containerID) = 0;

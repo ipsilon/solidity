@@ -119,7 +119,7 @@ void NoOutputAssembly::endFunction()
 {
 }
 
-void NoOutputAssembly::appendFunctionCall(FunctionID _functionID)
+void NoOutputAssembly::appendFunctionCall(FunctionID _functionID, int)
 {
 	auto [args, rets] = m_context->functionSignatures.at(_functionID);
 	m_stackHeight += static_cast<int>(rets) - static_cast<int>(args);
