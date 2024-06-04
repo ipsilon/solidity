@@ -998,6 +998,7 @@ std::string IRGenerator::deployCode(ContractDefinition const& _contract)
 				{"immutableName"s, IRNames::libraryAddressImmutable()},
 				{"value"s, "address()"}
 			});
+			t("immutables", std::move(immutables));
 		}
 	}
 	else
