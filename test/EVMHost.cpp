@@ -147,6 +147,8 @@ EVMHost::EVMHost(langutil::EVMVersion _evmVersion, evmc::VM& _vm):
 	tx_context.blob_hashes = blob_hashes_array;
 	tx_context.blob_hashes_count = sizeof(blob_hashes_array) / sizeof(blob_hashes_array[0]);
 
+	tx_context.block_timestamp = 1717500058;
+
 	// Reserve space for recording calls.
 	if (!recorded_calls.capacity())
 		recorded_calls.reserve(max_recorded_calls);

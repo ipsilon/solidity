@@ -250,7 +250,7 @@ size_t ExecutionFramework::blockTimestamp(u256 _block)
 
 h160 ExecutionFramework::account(size_t _idx)
 {
-	return h160(h256(u256{"0x1212121212121212121212121212120000000012"} + _idx * 0x1000), h160::AlignRight);
+	return h160(h256(u256{"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"} + _idx * 0x1000), h160::AlignRight);
 }
 
 bool ExecutionFramework::addressHasCode(h160 const& _addr) const
