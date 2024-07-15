@@ -13,7 +13,7 @@ contract D is M.C {
 
 contract A {
 	function g(int p) public returns (int) {
-		D d = new D(p);
+		D d = new D{salt: bytes32(uint256(p))}(p);
 		return d.getX();
 	}
 }
