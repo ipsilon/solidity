@@ -11,9 +11,9 @@ contract B
 
 contract A {
     function f() public payable returns (uint, uint, uint) {
-        B x = new B{salt: "abc", value: 3}(7);
-        B y = new B{value: 3, salt: "abc"}(8);
-        B z = new B{salt: "abc", value: 3}(9);
+        B x = new B{salt: "abc0", value: 3}(7);
+        B y = new B{value: 3, salt: "abc1"}(8);
+        B z = new B{salt: "abc2", value: 3}(9);
         return (x.getBalance(), y.getBalance(), z.getBalance());
     }
 }
