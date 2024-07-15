@@ -4,7 +4,7 @@ contract C {
 	constructor() payable {}
 	function f(uint amount) public returns (D) {
 		x++;
-		return (new D){value: amount}();
+		return (new D){value: amount, salt: bytes32(x)}();
 	}
 	function stack(uint depth) public payable returns (address) {
 		if (depth > 0)
@@ -23,7 +23,7 @@ contract C {
 // gas legacy code: 215400
 // gas legacyOptimized: 61715
 // gas legacyOptimized code: 106800
-// f(uint256): 20 -> 0x137aa4dfc0911524504fcd4d98501f179bc13b4a
+// f(uint256): 20 -> 0x60b93815d3ee91909a7578fc0bb5160dd397b84f
 // x() -> 1
 // f(uint256): 20 -> FAILURE
 // x() -> 1
@@ -32,5 +32,5 @@ contract C {
 // gas legacy: 477722
 // gas legacyOptimized: 299567
 // x() -> 1
-// stack(uint256): 10 -> 0x87948bd7ebbe13a00bfd930c93e4828ab18e3908
+// stack(uint256): 10 -> 0xc5b14dc26e934375b0e15c6efaddd44eaad3be3e
 // x() -> 2
