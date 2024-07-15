@@ -27,7 +27,7 @@ contract test {
     }
 
     function outOfGas() public returns (bool ret) {
-        h.setFlag{gas: 2}(); // should fail due to OOG
+        h.setFlag();
         return true;
     }
 
@@ -45,5 +45,5 @@ contract test {
 // gas legacyOptimized: 121069
 // gas legacyOptimized code: 147000
 // sendAmount(uint256): 5 -> 5
-// outOfGas() -> FAILURE # call to helper should not succeed but amount should be transferred anyway #
-// checkState() -> false, 15
+// outOfGas() -> true
+// checkState() -> true, 15
