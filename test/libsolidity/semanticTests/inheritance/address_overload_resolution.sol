@@ -11,11 +11,11 @@ contract C {
 
 contract D {
     function f() public returns (uint256) {
-        return (new C()).balance();
+        return (new C{salt: hex"00"}()).balance();
     }
 
     function g() public returns (uint256) {
-        return (new C()).transfer(5);
+        return (new C{salt: hex"01"}()).transfer(5);
     }
 }
 // ----
