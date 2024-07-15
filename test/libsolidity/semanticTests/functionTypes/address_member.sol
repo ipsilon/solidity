@@ -7,4 +7,4 @@ contract C {
     }
 }
 // ----
-// f() -> 0xc06afe3a8444fc0004668591e8306bfb9968e79e, 0xc06afe3a8444fc0004668591e8306bfb9968e79e
+// f() -> 0xee15a2dceade4d1f9c57c8ec5b96baa2ac6d1ca2, 0xee15a2dceade4d1f9c57c8ec5b96baa2ac6d1ca2
