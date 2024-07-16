@@ -39,13 +39,13 @@ function loadAdder() pure returns (IAdder adder) {
 
 contract C {
     function testMul(Int32 x, Int32 y) public returns (Int32) {
-        storeAdder(new Adder());
+        storeAdder(new Adder{salt: hex"00"}());
 
         return x + y;
     }
 
     function testInc(Int32 x) public returns (Int32) {
-        storeAdder(new Adder());
+        storeAdder(new Adder{salt: hex"00"}());
 
         return -x;
     }
