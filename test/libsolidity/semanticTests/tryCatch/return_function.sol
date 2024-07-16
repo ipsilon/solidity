@@ -14,4 +14,4 @@ contract C {
     function fun() public pure {}
 }
 // ----
-// f() -> 0x1, 0xc06afe3a8444fc0004668591e8306bfb9968e79e946644cd0000000000000000, 9
+// f() -> 0x1, 0x23010d650727c5a8114c0d9bb05acf12e4e3b75e946644cd0000000000000000, 9

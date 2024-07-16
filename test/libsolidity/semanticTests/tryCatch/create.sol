@@ -29,4 +29,4 @@ contract C {
 // EVMVersion: >=byzantium
 // ----
 // f() -> 0, 0, 96, 13, "test message."
-// g() -> 0x137aa4dfc0911524504fcd4d98501f179bc13b4a, 0, 96, 7, "success"
+// g() -> 0x3509E662A200F03A08C47A1D9EE813453C544882, 0, 96, 7, "success"
