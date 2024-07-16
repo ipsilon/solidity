@@ -18,11 +18,11 @@ contract C {
 	uint public y;
 	constructor() {
 		a = 3;
-		x = (new A()).f();
-		y = (new B()).f();
+		x = (new A{salt: hex"00"}()).f();
+		y = (new B{salt: hex"00"}()).f();
 	}
 	function f() public returns (uint256, uint, uint) {
-		return (a, (new A()).f(), (new B()).f());
+		return (a, (new A{salt: hex"01"}()).f(), (new B{salt: hex"01"}()).f());
 	}
 }
 // ----

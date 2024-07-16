@@ -45,7 +45,7 @@ contract C {
     }
 
     function testInc(Int32 x) public returns (Int32) {
-        storeAdder(new Adder{salt: hex"00"}());
+        storeAdder(new Adder{salt: hex"01"}());
 
         return -x;
     }
