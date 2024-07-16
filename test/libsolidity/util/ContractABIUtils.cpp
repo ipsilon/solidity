@@ -143,7 +143,10 @@ std::optional<ABIType> isFixedPoint(std::string const& type)
 std::string functionSignatureFromABI(Json const& _functionABI)
 {
 	auto inputs = _functionABI["inputs"];
-	std::string signature = {_functionABI["name"].get<std::string>() + "("};
+	const auto it = _functionABI.find("name");
+	// In ABI "name" is not defined for contructor.
+	// TODO: Verify that contructor is th only one function without "name" field.
+	std::string signature = {(it != _functionABI.end() ? it->get<std::string>() : _functionABI["type"].get<std::string>()) + "("};
 	size_t parameterCount = 0;
 
 	for (auto const& input: inputs)

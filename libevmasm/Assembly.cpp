@@ -46,6 +46,7 @@
 #include <fstream>
 #include <limits>
 #include <iterator>
+#include <stack>
 
 using namespace solidity;
 using namespace solidity::evmasm;
@@ -438,7 +439,8 @@ Json Assembly::assemblyJSON(std::map<std::string, unsigned> const& _sourceIndice
 	root[".code"] = Json::array();
 	Json& code = root[".code"];
     // TODO: support EOF
-	for (AssemblyItem const& item: m_items)
+	solAssert(m_codeSections.size() == 1);
+	for (AssemblyItem const& item: m_codeSections[0].items)
 	{
 		int sourceIndex = -1;
 		if (item.location().sourceName)

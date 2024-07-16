@@ -331,7 +331,8 @@ std::map<YulString, BuiltinFunctionForEVM> createBuiltins(langutil::EVMVersion _
 				AbstractAssembly& _assembly,
 				BuiltinContext& context
 			) {
-				const auto it = context.subIDs.find(std::get<Literal>(_call.arguments[0]).value);
+				yulAssert(_call.arguments.size() == 5, "");
+				const auto it = context.subIDs.find(formatLiteral(std::get<Literal>(_call.arguments.front())));
 				if (it != context.subIDs.end())
 					_assembly.appendEofCreateCall(static_cast<solidity::yul::AbstractAssembly::ContainerID>((*it).second));
 			}
@@ -359,7 +360,8 @@ std::map<YulString, BuiltinFunctionForEVM> createBuiltins(langutil::EVMVersion _
 					AbstractAssembly& _assembly,
 					BuiltinContext& context
 				) {
-					const auto it = context.subIDs.find(std::get<Literal>(_call.arguments[0]).value);
+					yulAssert(_call.arguments.size() == 3, "");
+					const auto it = context.subIDs.find(formatLiteral(std::get<Literal>(_call.arguments.front())));
 					if (it != context.subIDs.end())
 						_assembly.appendReturnContractCall(static_cast<solidity::yul::AbstractAssembly::ContainerID>((*it).second));
 				}
@@ -423,7 +425,7 @@ std::map<YulString, BuiltinFunctionForEVM> createBuiltins(langutil::EVMVersion _
 				BuiltinContext&
 			) {
 				yulAssert(_call.arguments.size() == 1, "");
-				_assembly.appendDataLoadN(std::stoul(std::get<Literal>(_call.arguments.front()).value.str()));
+				_assembly.appendDataLoadN(std::stoul(formatLiteral(std::get<Literal>(_call.arguments.front()))));
 			}
 			));
 	}

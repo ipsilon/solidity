@@ -193,7 +193,7 @@ std::unique_ptr<Block> Program::applyOptimisationSteps(
 	std::set<YulString> const externallyUsedIdentifiers = {};
 	OptimiserStepContext context{
 		_dialect,
-		nullopt, // TODO
+		std::nullopt, // TODO
 		_nameDispenser,
 		externallyUsedIdentifiers,
 		frontend::OptimiserSettings::standard().expectedExecutionsPerDeployment

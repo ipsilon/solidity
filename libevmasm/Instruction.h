@@ -105,8 +105,6 @@ enum class Instruction: uint8_t
 	GAS,                      ///< get the amount of available gas
 	JUMPDEST,                 ///< set a potential jump destination
 
-	MCOPY = 0x5e,             ///< copy between memory areas
-
 	TLOAD = 0x5c,             ///< load word from transient storage
 	TSTORE = 0x5d,            ///< save word to transient storage
 	MCOPY = 0x5e,             ///< copy between memory areas

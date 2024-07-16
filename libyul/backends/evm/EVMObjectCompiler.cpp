@@ -55,8 +55,8 @@ void EVMObjectCompiler::run(Object& _object, bool _optimize)
 	for (auto const& subNode: _object.subObjects)
 		if (auto* subObject = dynamic_cast<Object*>(subNode.get()))
 		{
-			bool isCreation = !boost::ends_with(subObject->name.str(), "_deployed");
-			auto subAssemblyAndID = m_assembly.createSubAssembly(isCreation, m_eofVersion, subObject->name.str());
+			bool isCreation = !boost::ends_with(subObject->name, "_deployed");
+			auto subAssemblyAndID = m_assembly.createSubAssembly(isCreation, m_eofVersion, subObject->name);
 			context.subIDs[subObject->name] = subAssemblyAndID.second;
 			subObject->subId = subAssemblyAndID.second;
 			compile(*subObject, *subAssemblyAndID.first, m_dialect, _optimize, m_eofVersion);
