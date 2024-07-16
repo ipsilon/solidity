@@ -1688,8 +1688,7 @@ void IRGeneratorForStatements::endVisit(FunctionCall const& _functionCall)
 			</eof>
 			if iszero(<success>) { <forwardingRevert>() }
 			<?eof>
-				if iszero(eq(returndatasize(), 32)) { <forwardingRevert>() }
-				returndatacopy(0, 0, 32)
+				if eq(returndatasize(), 32) { returndatacopy(0, 0, 32) }
 			</eof>
 			let <retVars> := <shl>(mload(0))
 		)");
