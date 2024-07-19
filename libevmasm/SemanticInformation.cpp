@@ -178,6 +178,12 @@ std::vector<SemanticInformation::Operation> SemanticInformation::readWriteOperat
 			Operation{Location::Storage, Effect::Read, {}, {}, {}},
 			Operation{Location::TransientStorage, Effect::Read, {}, {}, {}}
 		};
+		if (_instruction != Instruction::EXTSTATICCALL)
+		{
+			operations.emplace_back(Operation{Location::Storage, Effect::Write, {}, {}, {}});
+			operations.emplace_back(Operation{Location::TransientStorage, Effect::Write, {}, {}, {}});
+		}
+
 		return operations;
 	}
 	case Instruction::EXTCALL:
@@ -188,6 +194,12 @@ std::vector<SemanticInformation::Operation> SemanticInformation::readWriteOperat
 			Operation{Location::Storage, Effect::Read, {}, {}, {}},
 			Operation{Location::TransientStorage, Effect::Read, {}, {}, {}}
 		};
+		if (_instruction != Instruction::EXTSTATICCALL)
+		{
+			operations.emplace_back(Operation{Location::Storage, Effect::Write, {}, {}, {}});
+			operations.emplace_back(Operation{Location::TransientStorage, Effect::Write, {}, {}, {}});
+		}
+
 		return operations;
 	}
 	case Instruction::CREATE:
@@ -504,10 +516,13 @@ SemanticInformation::Effect SemanticInformation::storage(Instruction _instructio
 	case Instruction::CREATE2:
 	case Instruction::SSTORE:
 	case Instruction::EOFCREATE:
+	case Instruction::EXTCALL:
+	case Instruction::EXTDELEGATECALL:
 		return SemanticInformation::Write;
 
 	case Instruction::SLOAD:
 	case Instruction::STATICCALL:
+	case Instruction::EXTSTATICCALL:
 		return SemanticInformation::Read;
 
 	default:
@@ -526,10 +541,13 @@ SemanticInformation::Effect SemanticInformation::transientStorage(Instruction _i
 	case Instruction::CREATE2:
 	case Instruction::TSTORE:
 	case Instruction::EOFCREATE:
+	case Instruction::EXTCALL:
+	case Instruction::EXTDELEGATECALL:
 		return SemanticInformation::Write;
 
 	case Instruction::TLOAD:
 	case Instruction::STATICCALL:
+	case Instruction::EXTSTATICCALL:
 		return SemanticInformation::Read;
 
 	default:
@@ -547,6 +565,8 @@ SemanticInformation::Effect SemanticInformation::otherState(Instruction _instruc
 	case Instruction::CREATE:
 	case Instruction::CREATE2:
 	case Instruction::EOFCREATE:
+	case Instruction::EXTCALL:
+	case Instruction::EXTDELEGATECALL:
 	case Instruction::SELFDESTRUCT:
 	case Instruction::STATICCALL: // because it can affect returndatasize
 		// Strictly speaking, log0, .., log4 writes to the state, but the EVM cannot read it, so they
@@ -621,6 +641,9 @@ bool SemanticInformation::invalidInViewFunctions(Instruction _instruction)
 	case Instruction::CALL:
 	case Instruction::CALLCODE:
 	case Instruction::DELEGATECALL:
+	case Instruction::EXTCALL:
+	case Instruction::EXTDELEGATECALL:
+	case Instruction::EOFCREATE:
 	case Instruction::CREATE2:
 	case Instruction::SELFDESTRUCT:
 		return true;
