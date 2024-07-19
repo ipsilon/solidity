@@ -2684,18 +2684,15 @@ void IRGeneratorForStatements::appendExternalFunctionCall(
 				let <returnDataSizeVar> := returndatasize()
 				returndatacopy(<pos>, 0, <returnDataSizeVar>)
 			<!isReturndataSizeDynamic>
-				<?eof>
-					let <returnDataSizeVar> := returndatasize()
-					returndatacopy(<pos>, 0, <returnDataSizeVar>)
-				<!eof>
-					let <returnDataSizeVar> := <staticReturndataSize>
-					<?supportsReturnData>
-						if gt(<returnDataSizeVar>, returndatasize()) {
-							<returnDataSizeVar> := returndatasize()
-						}
-					</supportsReturnData>
-				</eof>
-
+				let <returnDataSizeVar> := <staticReturndataSize>
+				<?supportsReturnData>
+					if gt(<returnDataSizeVar>, returndatasize()) {
+						<returnDataSizeVar> := returndatasize()
+					}
+					<?eof>
+						returndatacopy(<pos>, 0, <returnDataSizeVar>)
+					</eof>
+				</supportsReturnData>
 			</isReturndataSizeDynamic>
 
 			// update freeMemoryPointer according to dynamic return size
