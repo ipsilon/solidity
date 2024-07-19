@@ -23,17 +23,17 @@ contract C {
     }
 
     function convertSubA() public returns (uint256, uint256) {
-        bytes32 s = 0x0000000000000000000000000000000000000000000000000000000000000001;
-        SubA sa = new Impl{salt: s}();
+        SubA sa = new Impl();
         return (sa.parentFun(), sa.subAFun());
     }
 
     function convertSubB() public returns (uint256, uint256) {
-        bytes32 s = 0x0000000000000000000000000000000000000000000000000000000000000002;
-        SubB sb = new Impl{salt: s}();
+        SubB sb = new Impl();
         return (sb.parentFun(), sb.subBFun());
     }
 }
+// ====
+// compileToEOF: false
 // ----
 // convertParent() -> 1
 // gas irOptimized: 85524

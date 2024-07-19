@@ -6,5 +6,7 @@ contract C {
         a2 = [this.f.address][0];
     }
 }
+// ====
+// compileToEOF: false
 // ----
-// f() -> 0xee15a2dceade4d1f9c57c8ec5b96baa2ac6d1ca2, 0xee15a2dceade4d1f9c57c8ec5b96baa2ac6d1ca2
+// f() -> 0xc06afe3a8444fc0004668591e8306bfb9968e79e, 0xc06afe3a8444fc0004668591e8306bfb9968e79e

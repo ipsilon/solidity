@@ -18,13 +18,15 @@ contract C {
 	uint public y;
 	constructor() {
 		a = 3;
-		x = (new A{salt: hex"00"}()).f();
-		y = (new B{salt: hex"00"}()).f();
+		x = (new A()).f();
+		y = (new B()).f();
 	}
 	function f() public returns (uint256, uint, uint) {
-		return (a, (new A{salt: hex"01"}()).f(), (new B{salt: hex"01"}()).f());
+		return (a, (new A()).f(), (new B()).f());
 	}
 }
+// ====
+// compileToEOF: false
 // ----
 // f() -> 3, 7, 5
 // gas irOptimized: 86796

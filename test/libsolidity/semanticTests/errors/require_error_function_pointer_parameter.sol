@@ -14,5 +14,7 @@ contract C
     }
 }
 
+// ====
+// compileToEOF: false
 // ----
-// f() -> FAILURE, hex"271b1dfa", hex"8ff77dee959af275e2a83aeb93366e425c1abf0ff37cdc8e0000000000000000"
+// f() -> FAILURE, hex"271b1dfa", hex"c06afe3a8444fc0004668591e8306bfb9968e79ef37cdc8e0000000000000000"

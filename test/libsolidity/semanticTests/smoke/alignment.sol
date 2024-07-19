@@ -1,7 +1,5 @@
 contract C {
     uint256 public stateDecimal = 0x20;
-
-    uint256 public test;
 }
 
 contract D {
@@ -30,4 +28,3 @@ contract D {
 // gas legacy: 76665
 // gas legacy code: 23600
 // update(bool,uint256,bytes32): false, -23, left(0x2300ef) -> false, -23, left(0x2300ef)
-

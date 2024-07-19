@@ -9,7 +9,9 @@ contract C {
       return a.address;
     }
 }
+// ====
+// compileToEOF: false
 // ----
-// f() -> 0xf3db55f48d1ff0cc12f1e5ea92013a9acf4313c0
+// f() -> 0xc06afe3a8444fc0004668591e8306bfb9968e79e
 // g() -> true
 // h(function): left(0x1122334400112233445566778899AABBCCDDEEFF42424242) -> 0x1122334400112233445566778899AABBCCDDEEFF

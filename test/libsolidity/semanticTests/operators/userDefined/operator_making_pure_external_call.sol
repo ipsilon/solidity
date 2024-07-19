@@ -39,17 +39,19 @@ function loadAdder() pure returns (IAdder adder) {
 
 contract C {
     function testMul(Int32 x, Int32 y) public returns (Int32) {
-        storeAdder(new Adder{salt: hex"00"}());
+        storeAdder(new Adder());
 
         return x + y;
     }
 
     function testInc(Int32 x) public returns (Int32) {
-        storeAdder(new Adder{salt: hex"01"}());
+        storeAdder(new Adder());
 
         return -x;
     }
 }
+// ====
+// compileToEOF: false
 // ----
 // testMul(int32,int32): 42, 10 -> 420
 // gas irOptimized: 102563

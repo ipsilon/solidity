@@ -27,7 +27,7 @@ contract C {
 
     function testDelegateCall() external returns (bool) {
         this.set(5);
-        D d = new D{salt: hex"00"}();
+        D d = new D();
         // Caller contract is the owner of the transient storage
         (bool success, ) = address(d).delegatecall(abi.encodeCall(d.addOne, ()));
         require(success);
@@ -37,7 +37,7 @@ contract C {
 
     function testCall() external returns (bool) {
         this.set(5);
-        D d = new D{salt: hex"01"}();
+        D d = new D();
         // Callee/Target contract is the owner of the transient storage
         (bool success, ) = address(d).call(abi.encodeCall(d.addOne, ()));
         require(success);
@@ -47,7 +47,7 @@ contract C {
 
     function tloadAllowedStaticCall() external returns (bool) {
         this.set(5);
-        D d = new D{salt: hex"02"}();
+        D d = new D();
         (bool success, bytes memory result) = address(d).staticcall(abi.encodeCall(d.get, ()));
         require(success);
         require(abi.decode(result, (uint)) == 0);
@@ -55,7 +55,7 @@ contract C {
     }
 
     function tstoreNotAllowedStaticCall() external returns (bool) {
-        D d = new D{salt: hex"03"}();
+        D d = new D();
         (bool success, ) = address(d).staticcall(abi.encodeCall(d.addOne, ()));
         require(!success);
         return true;
@@ -63,6 +63,7 @@ contract C {
 }
 // ====
 // EVMVersion: >=cancun
+// compileToEOF: false
 // ----
 // testDelegateCall() -> true
 // testCall() -> true

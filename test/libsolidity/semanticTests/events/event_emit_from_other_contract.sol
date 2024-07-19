@@ -13,6 +13,8 @@ contract C {
         d.deposit(_id);
     }
 }
+// ====
+// compileToEOF: false
 // ----
 // constructor() ->
 // gas irOptimized: 113970
@@ -22,4 +24,4 @@ contract C {
 // gas legacyOptimized: 114187
 // gas legacyOptimized code: 57400
 // deposit(bytes32), 18 wei: 0x1234 ->
-// ~ emit Deposit(address,bytes32,uint256) from 0x0be11017bb8d0a1795c853d2da02a18324770817: #0xafdb4bcd0367b58bff8aeb875fcb4023ff83288d, #0x1234, 0x00
+// ~ emit Deposit(address,bytes32,uint256) from 0x137aa4dfc0911524504fcd4d98501f179bc13b4a: #0xc06afe3a8444fc0004668591e8306bfb9968e79e, #0x1234, 0x00

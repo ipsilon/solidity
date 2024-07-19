@@ -4,6 +4,8 @@ contract C {
         emit Test(this.f);
     }
 }
+// ====
+// compileToEOF: false
 // ----
 // f() ->
-// ~ emit Test(function): #0x3442700685a3d83e888ae28060861622cbb4f91826121ff00000000000000000
+// ~ emit Test(function): #0xc06afe3a8444fc0004668591e8306bfb9968e79e26121ff00000000000000000

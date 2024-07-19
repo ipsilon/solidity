@@ -5175,6 +5175,7 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PoolDeployer, NoDelegat
 
 // ====
 // compileViaYul: true
+// compileToEOF: false
 // ----
 // runTest() ->
 // ~ emit PoolCreated(address,address,uint24,int24,address): #0xcae46d9f4daa25084df3a0195e879c6618c6e0ad, #0xf1d47afc539313eac647fef05d55b428d75acea3, #0x01f4, 0x0a, 0xe412ca678930cd807e741c51a65f29ff0720930a

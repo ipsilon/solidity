@@ -27,7 +27,7 @@ contract test {
     }
 
     function outOfGas() public returns (bool ret) {
-        h.setFlag();
+        h.setFlag{gas: 2}(); // should fail due to OOG
         return true;
     }
 
@@ -36,6 +36,8 @@ contract test {
         myBal = address(this).balance;
     }
 }
+// ====
+// compileToEOF: false
 // ----
 // constructor(), 20 wei ->
 // gas irOptimized: 120218
@@ -45,5 +47,5 @@ contract test {
 // gas legacyOptimized: 121069
 // gas legacyOptimized code: 147000
 // sendAmount(uint256): 5 -> 5
-// outOfGas() -> true
-// checkState() -> true, 15
+// outOfGas() -> FAILURE # call to helper should not succeed but amount should be transferred anyway #
+// checkState() -> false, 15

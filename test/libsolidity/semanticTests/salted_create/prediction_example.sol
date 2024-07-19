@@ -43,6 +43,7 @@ contract C {
 // ====
 // EVMVersion: >=constantinople
 // compileViaYul: also
+// compileToEOF: false
 // ----
 // createDSalted(bytes32,uint256): 42, 64 ->
 // gas legacy: 78574
