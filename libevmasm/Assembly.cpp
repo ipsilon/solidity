@@ -977,28 +977,6 @@ LinkerObject const& Assembly::assemble() const
 		"Expected the first code section to have zero inputs and be non-returning."
 	);
     
-//	unsigned bytesRequiredForCode = codeSize(static_cast<unsigned>(subTagSize));
-//	m_tagPositionsInBytecode = std::vector<size_t>(m_usedTags, std::numeric_limits<size_t>::max());
-//	std::map<size_t, std::pair<size_t, size_t>> tagRef;
-//	std::multimap<h256, unsigned> dataRef;
-//	std::multimap<size_t, size_t> subRef;
-//	std::vector<unsigned> sizeRef; ///< Pointers to code locations where the size of the program is inserted
-//	unsigned bytesPerTag = numberEncodingSize(bytesRequiredForCode);
-//	// Adjust bytesPerTag for references to sub assemblies.
-//	for (auto&& codeSection: m_codeSections)
-//		for (AssemblyItem const& i: codeSection.items)
-//			if (i.type() == PushTag)
-//			{
-//				auto [subId, tagId] = i.splitForeignPushTag();
-//				if (subId == std::numeric_limits<size_t>::max())
-//					continue;
-//				assertThrow(subId < m_subs.size(), AssemblyException, "Invalid sub id");
-//				auto subTagPosition = m_subs[subId]->m_tagPositionsInBytecode.at(tagId);
-//				assertThrow(subTagPosition != std::numeric_limits<size_t>::max(), AssemblyException, "Reference to tag without position.");
-//				bytesPerTag = std::max(bytesPerTag, numberEncodingSize(subTagPosition));
-//			}
-//	uint8_t tagPush = static_cast<uint8_t>(pushInstruction(bytesPerTag));
-    
 	// TODO: assert zero inputs/outputs on code section zero
 	// TODO: assert one code section being present and *only* one being present unless EOF
 
@@ -1116,6 +1094,21 @@ LinkerObject const& Assembly::assemble() const
 	std::multimap<size_t, size_t> subRef;
 	std::vector<unsigned> sizeRef; ///< Pointers to code locations where the size of the program is inserted
 	unsigned bytesPerTag = numberEncodingSize(headerSize + bytesRequiredForCode + bytesRequiredForDataUpperBound);
+
+	// Adjust bytesPerTag for references to sub assemblies.
+	for (auto&& codeSection: m_codeSections)
+		for (AssemblyItem const& i: codeSection.items)
+			if (i.type() == PushTag)
+			{
+				auto [subId, tagId] = i.splitForeignPushTag();
+				if (subId == std::numeric_limits<size_t>::max())
+					continue;
+				assertThrow(subId < m_subs.size(), AssemblyException, "Invalid sub id");
+				auto subTagPosition = m_subs[subId]->m_tagPositionsInBytecode.at(tagId);
+				assertThrow(subTagPosition != std::numeric_limits<size_t>::max(), AssemblyException, "Reference to tag without position.");
+				bytesPerTag = std::max(bytesPerTag, numberEncodingSize(subTagPosition));
+			}
+
 	uint8_t tagPush = static_cast<uint8_t>(pushInstruction(bytesPerTag));
 
 	if (eof)
