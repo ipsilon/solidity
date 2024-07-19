@@ -5165,9 +5165,9 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PoolDeployer, NoDelegat
 
         test.mint(address(pool), address(this), int24(-1000), int24(1000), uint128(1000));
 
-        uint256 beforeSwap = t2.balanceOf(address(this));
-        test.swapExact0For1(address(pool), 1, address(this), 4295128740);
-        uint256 afterSwap = t2.balanceOf(address(this));
+        uint256 beforeSwap = t1.balanceOf(address(this));
+        test.swapExact0For1(address(pool), 10, address(this), 4295128740);
+        uint256 afterSwap = t1.balanceOf(address(this));
 
         require(beforeSwap != afterSwap, 'WRO');
     }
@@ -5178,13 +5178,14 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PoolDeployer, NoDelegat
 // compileToEOF: false
 // ----
 // runTest() ->
-// ~ emit PoolCreated(address,address,uint24,int24,address): #0xcae46d9f4daa25084df3a0195e879c6618c6e0ad, #0xf1d47afc539313eac647fef05d55b428d75acea3, #0x01f4, 0x0a, 0xe412ca678930cd807e741c51a65f29ff0720930a
-// ~ emit Approval(address,address,uint256) from 0xf1d47afc539313eac647fef05d55b428d75acea3: #0x52a8af63d2563cbad4065e22c86e92a170189aea, #0x47ca329f00fad0004175504de0168a11ca5053bc, 0x3b9aca00
-// ~ emit Approval(address,address,uint256) from 0xcae46d9f4daa25084df3a0195e879c6618c6e0ad: #0x52a8af63d2563cbad4065e22c86e92a170189aea, #0x47ca329f00fad0004175504de0168a11ca5053bc, 0x3b9aca00
-// ~ emit Initialize(uint160,int24) from 0xe412ca678930cd807e741c51a65f29ff0720930a: 0x85607379ff6f79edb3e272aaeae79d5263988d26, 0x0d56f8
-// ~ emit MintCallback(uint256,uint256) from 0x47ca329f00fad0004175504de0168a11ca5053bc: 0x00, 0x65
-// ~ emit Transfer(address,address,uint256) from 0xf1d47afc539313eac647fef05d55b428d75acea3: #0x52a8af63d2563cbad4065e22c86e92a170189aea, #0xe412ca678930cd807e741c51a65f29ff0720930a, 0x65
-// ~ emit Mint(address,address,int24,int24,uint128,uint256,uint256) from 0xe412ca678930cd807e741c51a65f29ff0720930a: #0x52a8af63d2563cbad4065e22c86e92a170189aea, #0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc18, #0x03e8, 0x47ca329f00fad0004175504de0168a11ca5053bc, 0x03e8, 0x00, 0x65
-// ~ emit SwapCallback(int256,int256) from 0x47ca329f00fad0004175504de0168a11ca5053bc: 0x01, 0x00
-// ~ emit Transfer(address,address,uint256) from 0xcae46d9f4daa25084df3a0195e879c6618c6e0ad: #0x52a8af63d2563cbad4065e22c86e92a170189aea, #0xe412ca678930cd807e741c51a65f29ff0720930a, 0x01
-// ~ emit Swap(address,address,int256,int256,uint160,uint128,int24) from 0xe412ca678930cd807e741c51a65f29ff0720930a: #0x47ca329f00fad0004175504de0168a11ca5053bc, #0x52a8af63d2563cbad4065e22c86e92a170189aea, 0x01, 0x00, 0x010d1fee2afe8561359d69a466, 0x03e8, 0x03e7
+// ~ emit PoolCreated(address,address,uint24,int24,address): #0x268c98cd4338d80f8a149b8d7bd8944dba9f5d7c, #0xe4b1482254b07c39df789bde7c8bab4edc34e459, #0x01f4, 0x0a, 0x7fa6e5ff76dc624cf2f2ecf4436889a9de300b88
+// ~ emit Approval(address,address,uint256) from 0x268c98cd4338d80f8a149b8d7bd8944dba9f5d7c: #0xc06afe3a8444fc0004668591e8306bfb9968e79e, #0x137aa4dfc0911524504fcd4d98501f179bc13b4a, 0x3b9aca00
+// ~ emit Approval(address,address,uint256) from 0xe4b1482254b07c39df789bde7c8bab4edc34e459: #0xc06afe3a8444fc0004668591e8306bfb9968e79e, #0x137aa4dfc0911524504fcd4d98501f179bc13b4a, 0x3b9aca00
+// ~ emit Initialize(uint160,int24) from 0x7fa6e5ff76dc624cf2f2ecf4436889a9de300b88: 0x85607379ff6f79edb3e272aaeae79d5263988d26, 0x0d56f8
+// ~ emit MintCallback(uint256,uint256) from 0x137aa4dfc0911524504fcd4d98501f179bc13b4a: 0x00, 0x65
+// ~ emit Transfer(address,address,uint256) from 0xe4b1482254b07c39df789bde7c8bab4edc34e459: #0xc06afe3a8444fc0004668591e8306bfb9968e79e, #0x7fa6e5ff76dc624cf2f2ecf4436889a9de300b88, 0x65
+// ~ emit Mint(address,address,int24,int24,uint128,uint256,uint256) from 0x7fa6e5ff76dc624cf2f2ecf4436889a9de300b88: #0xc06afe3a8444fc0004668591e8306bfb9968e79e, #0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc18, #0x03e8, 0x137aa4dfc0911524504fcd4d98501f179bc13b4a, 0x03e8, 0x00, 0x65
+// ~ emit Transfer(address,address,uint256) from 0xe4b1482254b07c39df789bde7c8bab4edc34e459: #0x7fa6e5ff76dc624cf2f2ecf4436889a9de300b88, #0xc06afe3a8444fc0004668591e8306bfb9968e79e, 0x09
+// ~ emit SwapCallback(int256,int256) from 0x137aa4dfc0911524504fcd4d98501f179bc13b4a: 0x0a, 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7
+// ~ emit Transfer(address,address,uint256) from 0x268c98cd4338d80f8a149b8d7bd8944dba9f5d7c: #0xc06afe3a8444fc0004668591e8306bfb9968e79e, #0x7fa6e5ff76dc624cf2f2ecf4436889a9de300b88, 0x0a
+// ~ emit Swap(address,address,int256,int256,uint160,uint128,int24) from 0x7fa6e5ff76dc624cf2f2ecf4436889a9de300b88: #0x137aa4dfc0911524504fcd4d98501f179bc13b4a, #0xc06afe3a8444fc0004668591e8306bfb9968e79e, 0x0a, 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7, 0x010a9a2fd9e126942e9c978d07, 0x03e8, 0x032b

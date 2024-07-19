@@ -24,7 +24,7 @@ contract C {
 // gas legacy code: 215400
 // gas legacyOptimized: 61715
 // gas legacyOptimized code: 106800
-// f(uint256): 20 -> 0x4ea82a0bef58cda16ed9da98f4b0f9f075782289
+// f(uint256): 20 -> 0x760ad2428f897a994a0377ef5a3b626dfe295672
 // x() -> 1
 // f(uint256): 20 -> FAILURE
 // x() -> 1
@@ -33,5 +33,5 @@ contract C {
 // gas legacy: 477722
 // gas legacyOptimized: 299567
 // x() -> 1
-// stack(uint256): 10 -> 0x2b6e1feabb26ba40618128afa9856c0c55c1424e
+// stack(uint256): 10 -> 0xd64ba06e96a2fa752f7c8e10c7b6912e518e40c2
 // x() -> 2
