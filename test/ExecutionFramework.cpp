@@ -161,6 +161,7 @@ void ExecutionFramework::sendMessage(bytes const& _bytecode, bytes const& _argum
 		if (_value > 0)
 			std::cout << " value: " << _value << std::endl;
 		std::cout << " in:      " << util::toHex(_bytecode + _arguments) << std::endl;
+		std::cout << " size:    " << (_bytecode + _arguments).size() << std::endl;
 	}
 	evmc_message message{};
 	message.input_data = eof ? _arguments.data() : _data.data();
@@ -205,6 +206,7 @@ void ExecutionFramework::sendMessage(bytes const& _bytecode, bytes const& _argum
 	if (m_showMessages)
 	{
 		std::cout << " out:                       " << util::toHex(m_output) << std::endl;
+		std::cout << " size:                      " << (m_output).size() << std::endl;
 		std::cout << " result:                    " << static_cast<size_t>(result.status_code) << std::endl;
 		std::cout << " gas used:                  " << m_gasUsed.str() << std::endl;
 		std::cout << " gas used (without refund): " << totalGasUsed.str() << std::endl;
