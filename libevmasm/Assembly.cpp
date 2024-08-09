@@ -719,9 +719,7 @@ AssemblyItem Assembly::newDataLoadN(size_t offset)
 
 Assembly& Assembly::optimise(OptimiserSettings const& _settings)
 {
-	// TODO: implement and verify `optimiseInternal` implementation for EOF.
-	if (!m_eofVersion.has_value())
-		optimiseInternal(_settings, {});
+	optimiseInternal(_settings, {});
 	return *this;
 }
 
@@ -730,18 +728,19 @@ std::map<u256, u256> const& Assembly::optimiseInternal(
 	std::set<size_t> _tagsReferencedFromOutside
 )
 {
+	assertThrow(!m_eofVersion.has_value() || _tagsReferencedFromOutside.empty(), AssemblyException, "Disallowed access to a subcointainer in EOF.");
 	if (m_tagReplacements)
 		return *m_tagReplacements;
 
 	// Run optimisation for sub-assemblies.
-	// TODO: verify and double-check this for EOF.
 	for (size_t subId = 0; subId < m_subs.size(); ++subId)
 	{
 		OptimiserSettings settings = _settings;
 		Assembly& sub = *m_subs[subId];
 		std::set<size_t> referencedTags;
-		for (auto& codeSection: m_codeSections)
-			referencedTags += JumpdestRemover::referencedTags(codeSection.items, subId);
+		if (!m_eofVersion.has_value())
+			for (auto& codeSection: m_codeSections)
+				referencedTags += JumpdestRemover::referencedTags(codeSection.items, subId);
 		std::map<u256, u256> const& subTagReplacements = sub.optimiseInternal(
 			settings,
 			referencedTags
