@@ -400,12 +400,16 @@ void Assembly::assemblyStream(
 ) const
 {
 	Functionalizer f(_out, _prefix, _sourceCodes, *this);
+	
+	for (size_t s = 0; s < m_codeSections.size(); ++s)
+	{
+		_out << std::endl << _prefix << "section_" << s << ": assembly {\n";
+		for (auto const& i: m_codeSections[s].items)
+			f.feed(i, _debugInfoSelection);
 
-	// TODO: support EOF
-	solUnimplementedAssert(!m_eofVersion.has_value(), "Assembly output for EOF is not yet implemented.");
-	for (auto const& i: m_codeSections.front().items)
-		f.feed(i, _debugInfoSelection);
-	f.flush();
+		f.flush();
+		_out << _prefix << "}" << std::endl;
+	}
 
 	if (!m_data.empty() || !m_subs.empty())
 	{
