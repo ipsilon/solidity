@@ -51,7 +51,8 @@ public:
 		bool _isCreation,
 		size_t _runs,
 		langutil::EVMVersion _evmVersion,
-		Assembly& _assembly
+		Assembly& _assembly,
+		std::optional<uint8_t> _eofVersion = std::nullopt
 	);
 
 protected:

@@ -31,7 +31,8 @@ unsigned ConstantOptimisationMethod::optimiseConstants(
 	bool _isCreation,
 	size_t _runs,
 	langutil::EVMVersion _evmVersion,
-	Assembly& _assembly
+	Assembly& _assembly,
+	std::optional<uint8_t> _eofVersion
 )
 {
 	// TODO: design the optimiser in a way this is not needed
@@ -57,10 +58,18 @@ unsigned ConstantOptimisationMethod::optimiseConstants(
 			params.evmVersion = _evmVersion;
 			LiteralMethod lit(params, item.data());
 			bigint literalGas = lit.gasNeeded();
+			bigint copyGas;
 			CodeCopyMethod copy(params, item.data());
-			bigint copyGas = copy.gasNeeded();
+
+			if (!_eofVersion.has_value())
+				copyGas = copy.gasNeeded();
+
 			ComputeMethod compute(params, item.data());
 			bigint computeGas = compute.gasNeeded();
+
+			if (_eofVersion.has_value())
+				copyGas = std::max(computeGas, literalGas) + 1;
+
 			AssemblyItems replacement;
 			if (copyGas < literalGas && copyGas < computeGas)
 			{
