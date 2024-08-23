@@ -28,6 +28,7 @@
 #include <libevmasm/Inliner.h>
 #include <libevmasm/JumpdestRemover.h>
 #include <libevmasm/BlockDeduplicator.h>
+#include <libevmasm/BlockMover.h>
 #include <libevmasm/ConstantOptimiser.h>
 
 #include <liblangutil/CharStream.h>
@@ -735,6 +736,10 @@ std::map<u256, u256> const& Assembly::optimiseInternal(
 	assertThrow(!m_eofVersion.has_value() || _tagsReferencedFromOutside.empty(), AssemblyException, "Disallowed access to a subcointainer in EOF.");
 	if (m_tagReplacements)
 		return *m_tagReplacements;
+
+	if (m_eofVersion.has_value())
+		for (auto& codeSection: m_codeSections)
+			BlockMover{codeSection.items}.move();
 
 	// Run optimisation for sub-assemblies.
 	for (size_t subId = 0; subId < m_subs.size(); ++subId)

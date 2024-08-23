@@ -462,9 +462,8 @@ void OptimizedEVMCodeTransform::operator()(CFG::BasicBlock const& _block)
 					m_blockLabels[_jump.target] = m_assembly.newLabelId();
 
 				// If we already have generated the target block, jump to it, otherwise generate it in place.
-				if (m_generated.count(_jump.target))
-					m_assembly.appendJumpTo(m_blockLabels[_jump.target]);
-				else
+				m_assembly.appendJumpTo(m_blockLabels[_jump.target]);
+				if (!m_generated.count(_jump.target))
 					(*this)(*_jump.target);
 			}
 		},
@@ -499,9 +498,8 @@ void OptimizedEVMCodeTransform::operator()(CFG::BasicBlock const& _block)
 				});
 
 				// If we have already generated the zero case, jump to it, otherwise generate it in place.
-				if (m_generated.count(_conditionalJump.zero))
-					m_assembly.appendJumpTo(m_blockLabels[_conditionalJump.zero]);
-				else
+				m_assembly.appendJumpTo(m_blockLabels[_conditionalJump.zero]);
+				if (!m_generated.count(_conditionalJump.zero))
 					(*this)(*_conditionalJump.zero);
 			}
 			// Note that each block visit terminates control flow, so we cannot fall through from the zero case.
