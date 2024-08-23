@@ -880,6 +880,66 @@ BOOST_AUTO_TEST_CASE(block_deduplicator)
 	BOOST_CHECK_EQUAL(pushTags.size(), 2);
 }
 
+BOOST_AUTO_TEST_CASE(block_deduplicator_eof)
+{
+	AssemblyItems input{
+		AssemblyItem(RelativeJump, 2),
+		AssemblyItem(RelativeJump, 1),
+		AssemblyItem(RelativeJump, 3),
+		u256(6),
+		Instruction::SWAP3,
+		Instruction::STOP,
+		AssemblyItem(Tag, 1),
+		u256(6),
+		Instruction::SWAP3,
+		AssemblyItem(RelativeJump, 1),
+		AssemblyItem(Tag, 2),
+		u256(6),
+		Instruction::SWAP3,
+		AssemblyItem(RelativeJump, 2),
+		AssemblyItem(Tag, 3)
+	};
+	BlockDeduplicator deduplicator(input, 1);
+	deduplicator.deduplicate();
+
+	std::set<u256> rjumpTags;
+	for (AssemblyItem const& item: input)
+		if (item.type() == RelativeJump)
+			rjumpTags.insert(item.data());
+	BOOST_CHECK_EQUAL(rjumpTags.size(), 2);
+}
+
+BOOST_AUTO_TEST_CASE(block_deduplicator_different_rjumpi_tag)
+{
+	AssemblyItems input{
+		AssemblyItem(RelativeJump, 2),
+		AssemblyItem(RelativeJump, 1),
+		AssemblyItem(RelativeJump, 3),
+		u256(6),
+		Instruction::SWAP3,
+		Instruction::STOP,
+		AssemblyItem(Tag, 1),
+		u256(6),
+		AssemblyItem(ConditionalRelativeJump, 2),
+		Instruction::SWAP3,
+		AssemblyItem(RelativeJump, 1),
+		AssemblyItem(Tag, 2),
+		u256(6),
+		AssemblyItem(ConditionalRelativeJump, 1),
+		Instruction::SWAP3,
+		AssemblyItem(RelativeJump, 2),
+		AssemblyItem(Tag, 3)
+	};
+	BlockDeduplicator deduplicator(input, 1);
+	deduplicator.deduplicate();
+
+	std::set<u256> rjumpTags;
+	for (AssemblyItem const& item: input)
+		if (item.type() == RelativeJump)
+			rjumpTags.insert(item.data());
+	BOOST_CHECK_EQUAL(rjumpTags.size(), 3);
+}
+
 BOOST_AUTO_TEST_CASE(block_deduplicator_assign_immutable_same)
 {
 	AssemblyItems blocks{
@@ -972,6 +1032,47 @@ BOOST_AUTO_TEST_CASE(block_deduplicator_loops)
 		if (item.type() == PushTag)
 			pushTags.insert(item.data());
 	BOOST_CHECK_EQUAL(pushTags.size(), 1);
+}
+
+BOOST_AUTO_TEST_CASE(block_deduplicator_loops_eof)
+{
+	AssemblyItems input{
+		u256(0),
+		Instruction::SLOAD,
+		AssemblyItem(RelativeJump, 1),
+		AssemblyItem(RelativeJump, 2),
+		AssemblyItem(ConditionalRelativeJump, 2),
+		AssemblyItem(ConditionalRelativeJump, 1),
+		AssemblyItem(Tag, 1),
+		u256(5),
+		u256(6),
+		AssemblyItem(ConditionalRelativeJump, 1),
+		Instruction::SSTORE,
+		AssemblyItem(RelativeJump, 1),
+		AssemblyItem(Tag, 2),
+		u256(5),
+		u256(6),
+		AssemblyItem(ConditionalRelativeJump, 2),
+		Instruction::SSTORE,
+		AssemblyItem(RelativeJump, 2),
+	};
+	BlockDeduplicator deduplicator(input, 1);
+	deduplicator.deduplicate();
+
+	{
+		std::set<u256> rjumpTags;
+		for (AssemblyItem const& item: input)
+			if (item.type() == RelativeJump)
+				rjumpTags.insert(item.data());
+		BOOST_CHECK_EQUAL(rjumpTags.size(), 1);
+	}
+	{
+		std::set<u256> rjumpiTags;
+		for (AssemblyItem const& item: input)
+			if (item.type() == ConditionalRelativeJump)
+				rjumpiTags.insert(item.data());
+		BOOST_CHECK_EQUAL(rjumpiTags.size(), 1);
+	}
 }
 
 BOOST_AUTO_TEST_CASE(clear_unreachable_code)

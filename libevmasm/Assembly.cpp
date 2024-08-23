@@ -800,10 +800,10 @@ std::map<u256, u256> const& Assembly::optimiseInternal(
 
 		// This only modifies PushTags, we have to run again to actually remove code.
 		// TODO: implement for EOF.
-		if (_settings.runDeduplicate && !m_eofVersion.has_value())
+		if (_settings.runDeduplicate)
 			for (auto& section: m_codeSections)
 			{
-				BlockDeduplicator deduplicator{section.items};
+				BlockDeduplicator deduplicator{section.items, m_eofVersion};
 				if (deduplicator.deduplicate())
 				{
 					for (auto const& replacement: deduplicator.replacedTags())
@@ -947,7 +947,16 @@ uint16_t calculateMaxStackHeight(std::vector<AssemblyItem> const& _items, uint16
 				worklist.push(s);
 			}
 			else
-				assertThrow(stack_heights.at(s) == stackHeight, AssemblyException, "Stack height mismatch.");
+			{
+				if (s < i) // Backward jump
+					assertThrow(stack_heights.at(s) == stackHeight, AssemblyException, "Stack height mismatch.");
+
+				if (stackHeight > stack_heights.at(s))
+				{
+					stack_heights[s] = stackHeight;
+					worklist.push(s);
+				}
+			}
 		}
 	}
 	return maxStackHeight;
