@@ -726,6 +726,11 @@ AssemblyItem Assembly::newImmutableAssignment(std::string const& _identifier)
 	return AssemblyItem{AssignImmutable, h};
 }
 
+AssemblyItem Assembly::newDataLoadN(size_t offset)
+{
+	return AssemblyItem{DataLoadN, offset};
+}
+
 Assembly& Assembly::optimise(OptimiserSettings const& _settings)
 {
 	optimiseInternal(_settings, {});
@@ -1319,6 +1324,7 @@ LinkerObject const& Assembly::assembleEOF() const
 	appendEOFHeader(ret.bytecode, codeSectionSizeOffsets, startOfContainerSectionHeader, dataSectionSizeOffset);
 
 	m_tagPositionsInBytecode = std::vector<size_t>(m_usedTags, std::numeric_limits<size_t>::max());
+	std::map<size_t, uint16_t> dataSectionRef;
 
 	for (auto&& [codeSectionIndex, codeSection]: m_codeSections | ranges::views::enumerate)
 	{
@@ -1359,6 +1365,14 @@ LinkerObject const& Assembly::assembleEOF() const
 				case VerbatimBytecode:
 					ret.bytecode += i.verbatimData();
 					break;
+				case DataLoadN:
+				{
+					assertThrow(i.data() <= std::numeric_limits<uint16_t>::max(), AssemblyException, "Invalid dataloadn position.");
+					ret.bytecode.push_back(uint8_t(Instruction::DATALOADN));
+					dataSectionRef[ret.bytecode.size()] = static_cast<uint16_t>(i.data());
+					appendBigEndianUint16(ret.bytecode, i.data());
+					break;
+				}
 				case PushDeployTimeAddress:
 					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::PUSH20));
 					ret.bytecode.resize(ret.bytecode.size() + 20);
@@ -1425,8 +1439,13 @@ LinkerObject const& Assembly::assembleEOF() const
 
 		for (auto const& ref: oldLinkRefs)
 			newLinkRefs[ref.first + containerSectionHeader.size()] = ref.second;
+        ret.linkReferences = newLinkRefs;
 
-		ret.linkReferences = newLinkRefs;
+		// We inserted container section header before first code section so dataSectionRef have to be updated too.
+		decltype(dataSectionRef) newDataSectionRef;
+		for (auto const& ref: dataSectionRef)
+			newDataSectionRef[ref.first + containerSectionHeader.size()] = ref.second;
+        dataSectionRef = newDataSectionRef;
 	}
 
 	auto const dataStart = ret.bytecode.size();
@@ -1435,6 +1454,15 @@ LinkerObject const& Assembly::assembleEOF() const
 		ret.bytecode += dataItem.second;
 
 	ret.bytecode += m_auxiliaryData;
+
+	auto appendedDataAndAuxDataSize = ret.bytecode.size() - dataStart;
+
+	// If some data was already added to data section we need to update data section refs accordigly
+	if (appendedDataAndAuxDataSize > 0)
+	{
+		for (auto [pos, val] : dataSectionRef)
+			setBigEndian(ret.bytecode, pos, 2, val + appendedDataAndAuxDataSize);
+	}
 
 	auto dataLength = ret.bytecode.size() - dataStart;
 	setDataSectionSize(dataLength);
