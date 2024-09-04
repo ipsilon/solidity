@@ -58,11 +58,13 @@ AssemblyItem const& Assembly::append(AssemblyItem _i)
 {
 	assertThrow(m_deposit >= 0, AssemblyException, "Stack underflow.");
 	m_deposit += static_cast<int>(_i.deposit());
-	m_items.emplace_back(std::move(_i));
-	if (!m_items.back().location().isValid() && m_currentSourceLocation.isValid())
-		m_items.back().setLocation(m_currentSourceLocation);
-	m_items.back().m_modifierDepth = m_currentModifierDepth;
-	return m_items.back();
+	solAssert(m_currentCodeSection < m_codeSections.size());
+	auto& currentItems = m_codeSections.at(m_currentCodeSection).items;
+	currentItems.emplace_back(std::move(_i));
+	if (!currentItems.back().location().isValid() && m_currentSourceLocation.isValid())
+		currentItems.back().setLocation(m_currentSourceLocation);
+	currentItems.back().m_modifierDepth = m_currentModifierDepth;
+	return currentItems.back();
 }
 
 unsigned Assembly::codeSize(unsigned subTagSize) const
@@ -73,8 +75,9 @@ unsigned Assembly::codeSize(unsigned subTagSize) const
 		for (auto const& i: m_data)
 			ret += i.second.size();
 
-		for (AssemblyItem const& i: m_items)
-			ret += i.bytesRequired(tagSize, m_evmVersion, Precision::Precise);
+		for (auto const& codeSection: m_codeSections)
+			for (AssemblyItem const& i: codeSection.items)
+				ret += i.bytesRequired(tagSize, m_evmVersion, Precision::Precise);
 		if (numberEncodingSize(ret) <= tagSize)
 			return static_cast<unsigned>(ret);
 	}
@@ -82,11 +85,15 @@ unsigned Assembly::codeSize(unsigned subTagSize) const
 
 void Assembly::importAssemblyItemsFromJSON(Json const& _code, std::vector<std::string> const& _sourceList)
 {
-	solAssert(m_items.empty());
+	// Assembly constructor creates first code section with proper type and empty `items`
+	solAssert(m_codeSections.size() == 1);
+	solAssert(m_codeSections[0].items.empty());
+	// TODO: Add support for EOF and more than one code sections.
+	solUnimplementedAssert(!m_eofVersion.has_value(), "Assembly output for EOF is not yet implemented.");
 	solRequire(_code.is_array(), AssemblyImportException, "Supplied JSON is not an array.");
 	for (auto jsonItemIter = std::begin(_code); jsonItemIter != std::end(_code); ++jsonItemIter)
 	{
-		AssemblyItem const& newItem = m_items.emplace_back(createAssemblyItemFromJSON(*jsonItemIter, _sourceList));
+		AssemblyItem const& newItem = m_codeSections[0].items.emplace_back(createAssemblyItemFromJSON(*jsonItemIter, _sourceList));
 		if (newItem == Instruction::JUMPDEST)
 			solThrow(AssemblyImportException, "JUMPDEST instruction without a tag");
 		else if (newItem.type() == AssemblyItemType::Tag)
@@ -396,7 +403,10 @@ void Assembly::assemblyStream(
 {
 	Functionalizer f(_out, _prefix, _sourceCodes, *this);
 
-	for (auto const& i: m_items)
+	// TODO: support EOF
+	solUnimplementedAssert(!m_eofVersion.has_value(), "Assembly output for EOF is not yet implemented.");
+	solAssert(m_codeSections.size() == 1);
+	for (auto const& i: m_codeSections.front().items)
 		f.feed(i, _debugInfoSelection);
 	f.flush();
 
@@ -434,7 +444,10 @@ Json Assembly::assemblyJSON(std::map<std::string, unsigned> const& _sourceIndice
 	Json root;
 	root[".code"] = Json::array();
 	Json& code = root[".code"];
-	for (AssemblyItem const& item: m_items)
+    // TODO: support EOF
+	solUnimplementedAssert(!m_eofVersion.has_value(), "Assembly output for EOF is not yet implemented.");
+	solAssert(m_codeSections.size() == 1);
+	for (AssemblyItem const& item: m_codeSections.front().items)
 	{
 		int sourceIndex = -1;
 		if (item.location().sourceName)
@@ -518,7 +531,8 @@ Json Assembly::assemblyJSON(std::map<std::string, unsigned> const& _sourceIndice
 std::pair<std::shared_ptr<Assembly>, std::vector<std::string>> Assembly::fromJSON(
 	Json const& _json,
 	std::vector<std::string> const& _sourceList,
-	size_t _level
+	size_t _level,
+	std::optional<uint8_t> _eofVersion
 )
 {
 	solRequire(_json.is_object(), AssemblyImportException, "Supplied JSON is not an object.");
@@ -549,7 +563,7 @@ std::pair<std::shared_ptr<Assembly>, std::vector<std::string>> Assembly::fromJSO
 			"Member 'sourceList' may only be present in the root JSON object."
 		);
 
-	auto result = std::make_shared<Assembly>(EVMVersion{}, _level == 0 /* _creation */, std::nullopt, "" /* _name */);
+	auto result = std::make_shared<Assembly>(EVMVersion{}, _level == 0 /* _creation */, _eofVersion, "" /* _name */);
 	std::vector<std::string> parsedSourceList;
 	if (_json.contains("sourceList"))
 	{
@@ -717,16 +731,21 @@ std::map<u256, u256> const& Assembly::optimiseInternal(
 		return *m_tagReplacements;
 
 	// Run optimisation for sub-assemblies.
+	// TODO: verify and double-check this for EOF.
 	for (size_t subId = 0; subId < m_subs.size(); ++subId)
 	{
 		OptimiserSettings settings = _settings;
 		Assembly& sub = *m_subs[subId];
+		std::set<size_t> referencedTags;
+		for (auto& codeSection: m_codeSections)
+			referencedTags += JumpdestRemover::referencedTags(codeSection.items, subId);
 		std::map<u256, u256> const& subTagReplacements = sub.optimiseInternal(
 			settings,
-			JumpdestRemover::referencedTags(m_items, subId)
+			referencedTags
 		);
 		// Apply the replacements (can be empty).
-		BlockDeduplicator::applyTagReplacement(m_items, subTagReplacements, subId);
+		for (auto& codeSection: m_codeSections)
+			BlockDeduplicator::applyTagReplacement(codeSection.items, subTagReplacements, subId);
 	}
 
 	std::map<u256, u256> tagReplacements;
@@ -735,57 +754,70 @@ std::map<u256, u256> const& Assembly::optimiseInternal(
 	{
 		count = 0;
 
+		// TODO: verify this for EOF.
 		if (_settings.runInliner && !m_eofVersion.has_value())
+		{
+			solAssert(m_codeSections.size() == 1);
 			Inliner{
-				m_items,
+				m_codeSections.front().items,
 				_tagsReferencedFromOutside,
 				_settings.expectedExecutionsPerDeployment,
 				isCreation(),
-				_settings.evmVersion
-			}.optimise();
-
-		if (_settings.runJumpdestRemover)
+				_settings.evmVersion}
+				.optimise();
+		}
+		// TODO: verify this for EOF.
+		if (_settings.runJumpdestRemover && !m_eofVersion.has_value())
 		{
-			JumpdestRemover jumpdestOpt{m_items};
-			if (jumpdestOpt.optimise(_tagsReferencedFromOutside))
-				count++;
+			for (auto& codeSection: m_codeSections)
+			{
+				JumpdestRemover jumpdestOpt{codeSection.items};
+				if (jumpdestOpt.optimise(_tagsReferencedFromOutside))
+					count++;
+			}
 		}
 
-		if (_settings.runPeephole)
+		// TODO: verify this for EOF.
+		if (_settings.runPeephole && !m_eofVersion.has_value())
 		{
-			PeepholeOptimiser peepOpt{m_items, m_evmVersion};
-			while (peepOpt.optimise())
+			for (auto& codeSection: m_codeSections)
 			{
-				count++;
-				assertThrow(count < 64000, OptimizerException, "Peephole optimizer seems to be stuck.");
+				PeepholeOptimiser peepOpt{codeSection.items, m_evmVersion};
+				while (peepOpt.optimise())
+				{
+					count++;
+					assertThrow(count < 64000, OptimizerException, "Peephole optimizer seems to be stuck.");
+				}
 			}
 		}
 
 		// This only modifies PushTags, we have to run again to actually remove code.
+		// TODO: implement for EOF.
 		if (_settings.runDeduplicate && !m_eofVersion.has_value())
-		{
-			BlockDeduplicator deduplicator{m_items};
-			if (deduplicator.deduplicate())
+			for (auto& section: m_codeSections)
 			{
-				for (auto const& replacement: deduplicator.replacedTags())
+				BlockDeduplicator deduplicator{section.items};
+				if (deduplicator.deduplicate())
 				{
-					assertThrow(
-						replacement.first <= std::numeric_limits<size_t>::max() && replacement.second <= std::numeric_limits<size_t>::max(),
-						OptimizerException,
-						"Invalid tag replacement."
-					);
-					assertThrow(
-						!tagReplacements.count(replacement.first),
-						OptimizerException,
-						"Replacement already known."
-					);
-					tagReplacements[replacement.first] = replacement.second;
-					if (_tagsReferencedFromOutside.erase(static_cast<size_t>(replacement.first)))
-						_tagsReferencedFromOutside.insert(static_cast<size_t>(replacement.second));
+					for (auto const& replacement: deduplicator.replacedTags())
+					{
+						assertThrow(
+							replacement.first <= std::numeric_limits<size_t>::max() && replacement.second <= std::numeric_limits<size_t>::max(),
+							OptimizerException,
+							"Invalid tag replacement."
+						);
+						assertThrow(
+							!tagReplacements.count(replacement.first),
+							OptimizerException,
+							"Replacement already known."
+						);
+						tagReplacements[replacement.first] = replacement.second;
+						if (_tagsReferencedFromOutside.erase(static_cast<size_t>(replacement.first)))
+							_tagsReferencedFromOutside.insert(static_cast<size_t>(replacement.second));
+					}
+					count++;
 				}
-				count++;
 			}
-		}
 
 		// TODO: investigate for EOF
 		if (_settings.runCSE && !m_eofVersion.has_value())
@@ -795,17 +827,19 @@ std::map<u256, u256> const& Assembly::optimiseInternal(
 			// function types that can be stored in storage.
 			AssemblyItems optimisedItems;
 
-			bool usesMSize = ranges::any_of(m_items, [](AssemblyItem const& _i) {
+			solAssert(m_codeSections.size() == 1);
+			auto& items = m_codeSections.front().items;
+			bool usesMSize = ranges::any_of(items, [](AssemblyItem const& _i) {
 				return _i == AssemblyItem{Instruction::MSIZE} || _i.type() == VerbatimBytecode;
 			});
 
-			auto iter = m_items.begin();
-			while (iter != m_items.end())
+			auto iter = items.begin();
+			while (iter != items.end())
 			{
 				KnownState emptyState;
 				CommonSubexpressionEliminator eliminator{emptyState};
 				auto orig = iter;
-				iter = eliminator.feedItems(iter, m_items.end(), usesMSize);
+				iter = eliminator.feedItems(iter, items.end(), usesMSize);
 				bool shouldReplace = false;
 				AssemblyItems optimisedChunk;
 				try
@@ -832,9 +866,9 @@ std::map<u256, u256> const& Assembly::optimiseInternal(
 				else
 					copy(orig, iter, back_inserter(optimisedItems));
 			}
-			if (optimisedItems.size() < m_items.size())
+			if (optimisedItems.size() < items.size())
 			{
-				m_items = std::move(optimisedItems);
+				items = std::move(optimisedItems);
 				count++;
 			}
 		}
@@ -853,7 +887,86 @@ std::map<u256, u256> const& Assembly::optimiseInternal(
 	return *m_tagReplacements;
 }
 
+namespace
+{
+template<typename ValueT>
+void setBigEndian(bytes& _dest, size_t _offset, size_t _size, ValueT _value)
+{
+	assertThrow(numberEncodingSize(_value) <= _size, AssemblyException, "");
+	toBigEndian(_value, bytesRef(_dest.data() + _offset, _size));
+}
+
+template<typename ValueT>
+void appendBigEndian(bytes& _dest, size_t _size, ValueT _value)
+{
+	_dest.resize(_dest.size() + _size);
+	setBigEndian(_dest, _dest.size() - _size, _size, _value);
+}
+
+template<typename ValueT>
+void appendBigEndianUint16(bytes& _dest, ValueT _value)
+{
+	static_assert(!std::numeric_limits<ValueT>::is_signed, "only unsigned types or bigint supported");
+	assertThrow(_value <= 0xFFFF, AssemblyException, "");
+	appendBigEndian(_dest, 2, static_cast<size_t>(_value));
+}
+}
+
+void Assembly::appendEOFHeader(bytes& bytecode, std::vector<size_t>& codeSectionSizeOffsets, size_t& startOfContainerSectionHeader, size_t& dataSectionSizeOffset) const
+{
+	bytecode.push_back(0xef);
+	bytecode.push_back(0x00);
+	bytecode.push_back(0x01);										// version 1
+
+	bytecode.push_back(0x01);										// kind=type
+	appendBigEndianUint16(bytecode, m_codeSections.size() * 4u);	// length of type section
+
+	bytecode.push_back(0x02);										// kind=code
+	appendBigEndianUint16(bytecode, m_codeSections.size());			// placeholder for number of code sections
+
+	for (auto const& codeSection: m_codeSections)
+	{
+		(void) codeSection;
+		codeSectionSizeOffsets.emplace_back(bytecode.size());
+		appendBigEndianUint16(bytecode, 0u);						// placeholder for length of code
+	}
+
+	startOfContainerSectionHeader = bytecode.size();
+
+	bytecode.push_back(0x04);										// kind=data
+	dataSectionSizeOffset = bytecode.size();
+	appendBigEndianUint16(bytecode, 0u);							// length of data
+
+	bytecode.push_back(0x00);										// terminator
+
+	for (auto const& codeSection: m_codeSections)
+	{
+		bytecode.push_back(codeSection.inputs);
+		bytecode.push_back(codeSection.outputs);
+		appendBigEndianUint16(bytecode, 0xFFFFu);	// TODO: Add stack height calculation
+	}
+}
+
 LinkerObject const& Assembly::assemble() const
+{
+	assertThrow(!m_invalid, AssemblyException, "Attempted to assemble invalid Assembly object.");
+	// Return the already assembled object, if present.
+	if (!m_assembledObject.bytecode.empty())
+		return m_assembledObject;
+
+	// Otherwise ensure the object is actually clear.
+	assertThrow(m_assembledObject.linkReferences.empty(), AssemblyException, "Unexpected link references.");
+
+	bool const eof = m_eofVersion.has_value();
+	solAssert(!eof || m_eofVersion == 1, "Invalid EOF version.");
+
+	if (!eof)
+		return assembleLegacy();
+	else
+		return assembleEOF();
+}
+
+LinkerObject const& Assembly::assembleLegacy() const
 {
 	assertThrow(!m_invalid, AssemblyException, "Attempted to assemble invalid Assembly object.");
 	// Return the already assembled object, if present.
@@ -889,7 +1002,10 @@ LinkerObject const& Assembly::assemble() const
 	bool setsImmutables = false;
 	bool pushesImmutables = false;
 
-	for (auto const& i: m_items)
+	assertThrow(m_codeSections.size() == 1, AssemblyException, "Expected exactly one code section in non-EOF code.");
+	AssemblyItems const& items = m_codeSections.front().items;
+
+	for (auto const& i: items)
 		if (i.type() == AssignImmutable)
 		{
 			i.setImmutableOccurrences(immutableReferencesBySub[i.data()].second.size());
@@ -912,7 +1028,7 @@ LinkerObject const& Assembly::assemble() const
 	std::vector<unsigned> sizeRef; ///< Pointers to code locations where the size of the program is inserted
 	unsigned bytesPerTag = numberEncodingSize(bytesRequiredForCode);
 	// Adjust bytesPerTag for references to sub assemblies.
-	for (AssemblyItem const& i: m_items)
+	for (AssemblyItem const& i: items)
 		if (i.type() == PushTag)
 		{
 			auto [subId, tagId] = i.splitForeignPushTag();
@@ -933,7 +1049,7 @@ LinkerObject const& Assembly::assemble() const
 	uint8_t dataRefPush = static_cast<uint8_t>(pushInstruction(bytesPerDataRef));
 	ret.bytecode.reserve(bytesRequiredIncludingData);
 
-	for (AssemblyItem const& i: m_items)
+	for (AssemblyItem const& i: items)
 	{
 		// store position of the invalid jump destination
 		if (i.type() != Tag && m_tagPositionsInBytecode[0] == std::numeric_limits<size_t>::max())
@@ -1118,7 +1234,7 @@ LinkerObject const& Assembly::assemble() const
 	{
 		size_t position = m_tagPositionsInBytecode.at(tagInfo.id);
 		std::optional<size_t> tagIndex;
-		for (auto&& [index, item]: m_items | ranges::views::enumerate)
+		for (auto&& [index, item]: items | ranges::views::enumerate)
 			if (item.type() == Tag && static_cast<size_t>(item.data()) == tagInfo.id)
 			{
 				tagIndex = index;
@@ -1153,6 +1269,166 @@ LinkerObject const& Assembly::assemble() const
 		bytesRef r(ret.bytecode.data() + pos, bytesPerDataRef);
 		toBigEndian(ret.bytecode.size(), r);
 	}
+	return ret;
+}
+
+LinkerObject const& Assembly::assembleEOF() const
+{
+	LinkerObject& ret = m_assembledObject;
+
+	std::map<size_t, size_t> containerSizes;
+	for (size_t i = 0; i < m_subs.size(); ++i)
+	{
+		auto const& sub = m_subs[i];
+		auto const& linkerObject = sub->assemble();
+		solAssert(linkerObject.immutableReferences.empty());
+		containerSizes[i] = linkerObject.bytecode.size();
+	}
+
+	assertThrow(!m_codeSections.empty(), AssemblyException, "Expected at least one code section.");
+	assertThrow(
+		m_codeSections.front().inputs == 0 && m_codeSections.front().outputs == 0x80, AssemblyException,
+		"Expected the first code section to have zero inputs and be non-returning."
+	);
+
+	std::vector<size_t> codeSectionSizeOffsets;
+	auto setCodeSectionSize = [&](size_t _section, size_t _size) {
+		toBigEndian(_size, bytesRef(ret.bytecode.data() + codeSectionSizeOffsets.at(_section), 2));
+	};
+
+	size_t dataSectionSizeOffset = 0;
+	auto setDataSectionSize = [&](size_t _size) {
+		assertThrow(dataSectionSizeOffset != 0, AssemblyException, "");
+		assertThrow(_size <= 0xFFFF, AssemblyException, "Invalid data section size.");
+		toBigEndian(_size, bytesRef(ret.bytecode.data() + dataSectionSizeOffset, 2));
+	};
+
+	size_t startOfContainerSectionHeader = 0;
+
+	// Insert EOF1 header.
+	appendEOFHeader(ret.bytecode, codeSectionSizeOffsets, startOfContainerSectionHeader, dataSectionSizeOffset);
+
+	m_tagPositionsInBytecode = std::vector<size_t>(m_usedTags, std::numeric_limits<size_t>::max());
+
+	for (auto&& [codeSectionIndex, codeSection]: m_codeSections | ranges::views::enumerate)
+	{
+		auto const sectionStart = ret.bytecode.size();
+
+		for (AssemblyItem const& i: codeSection.items)
+		{
+			// store position of the invalid jump destination
+			if (i.type() != Tag && m_tagPositionsInBytecode[0] == std::numeric_limits<size_t>::max())
+				m_tagPositionsInBytecode[0] = ret.bytecode.size();
+
+			switch (i.type())
+			{
+				case Operation:
+					ret.bytecode.push_back(static_cast<uint8_t>(i.instruction()));
+					break;
+				case Push:
+				{
+					unsigned b = numberEncodingSize(i.data());
+					if (b == 0 && !m_evmVersion.hasPush0())
+					{
+						b = 1;
+					}
+					ret.bytecode.push_back(static_cast<uint8_t>(pushInstruction(b)));
+					if (b > 0)
+					{
+						ret.bytecode.resize(ret.bytecode.size() + b);
+						bytesRef byr(&ret.bytecode.back() + 1 - b, b);
+						toBigEndian(i.data(), byr);
+					}
+					break;
+				}
+				case PushLibraryAddress:
+					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::PUSH20));
+					ret.linkReferences[ret.bytecode.size()] = m_libraries.at(i.data());
+					ret.bytecode.resize(ret.bytecode.size() + 20);
+					break;
+				case VerbatimBytecode:
+					ret.bytecode += i.verbatimData();
+					break;
+				case PushDeployTimeAddress:
+					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::PUSH20));
+					ret.bytecode.resize(ret.bytecode.size() + 20);
+					break;
+				case Tag:
+				{
+					assertThrow(i.data() != 0, AssemblyException, "Invalid tag position.");
+					assertThrow(i.splitForeignPushTag().first == std::numeric_limits<size_t>::max(), AssemblyException, "Foreign tag.");
+					size_t tagId = static_cast<size_t>(i.data());
+					assertThrow(ret.bytecode.size() < 0xffffffffL, AssemblyException, "Tag too large.");
+					assertThrow(m_tagPositionsInBytecode[tagId] == std::numeric_limits<size_t>::max(), AssemblyException, "Duplicate tag position.");
+					m_tagPositionsInBytecode[tagId] = ret.bytecode.size();
+					break;
+				}
+				default:
+					assertThrow(false, InvalidOpcode, "Unexpected opcode while assembling.");
+			}
+		}
+
+		auto sectionEnd = ret.bytecode.size();
+		setCodeSectionSize(codeSectionIndex, sectionEnd - sectionStart);
+	}
+
+	for (auto const& [name, tagInfo]: m_namedTags)
+	{
+		size_t position = m_tagPositionsInBytecode.at(tagInfo.id);
+		std::optional<size_t> tagIndex;
+		for (auto& codeSection: m_codeSections)
+			for (auto&& [index, item]: codeSection.items | ranges::views::enumerate)
+				if (item.type() == Tag && static_cast<size_t>(item.data()) == tagInfo.id)
+				{
+					tagIndex = index;
+					break;
+				}
+		ret.functionDebugData[name] = {
+			position == std::numeric_limits<size_t>::max() ? std::nullopt : std::optional<size_t>{position},
+			tagIndex,
+			tagInfo.sourceID,
+			tagInfo.params,
+			tagInfo.returns
+		};
+	}
+
+	// Fill the num_container_sections
+	auto const numContainers = containerSizes.size();
+	if (numContainers > 0)
+	{
+		bytes containerSectionHeader = {};
+		containerSectionHeader.push_back(0x03);
+		appendBigEndianUint16(containerSectionHeader, numContainers);
+
+		for (auto s: containerSizes)
+			appendBigEndianUint16(containerSectionHeader, s.second);
+
+		ret.bytecode.insert(ret.bytecode.begin() + static_cast<ptrdiff_t>(startOfContainerSectionHeader),
+							containerSectionHeader.begin(), containerSectionHeader.end());
+
+		assertThrow(dataSectionSizeOffset != 0, AssemblyException, "Invalid data section size offset");
+		dataSectionSizeOffset += containerSectionHeader.size();
+
+		// We inserted some bytecode before first code section so all link references have to be updated too.
+		auto oldLinkRefs = ret.linkReferences;
+		std::map<size_t, std::string> newLinkRefs;
+
+		for (auto const& ref: oldLinkRefs)
+			newLinkRefs[ref.first + containerSectionHeader.size()] = ref.second;
+
+		ret.linkReferences = newLinkRefs;
+	}
+
+	auto const dataStart = ret.bytecode.size();
+
+	for (auto const& dataItem: m_data)
+		ret.bytecode += dataItem.second;
+
+	ret.bytecode += m_auxiliaryData;
+
+	auto dataLength = ret.bytecode.size() - dataStart;
+	setDataSectionSize(dataLength);
+
 	return ret;
 }
 
