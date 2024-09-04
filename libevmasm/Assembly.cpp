@@ -403,12 +403,22 @@ void Assembly::assemblyStream(
 {
 	Functionalizer f(_out, _prefix, _sourceCodes, *this);
 
-	// TODO: support EOF
-	solUnimplementedAssert(!m_eofVersion.has_value(), "Assembly output for EOF is not yet implemented.");
-	solAssert(m_codeSections.size() == 1);
 	for (auto const& i: m_codeSections.front().items)
 		f.feed(i, _debugInfoSelection);
 	f.flush();
+
+	if (m_codeSections.size() > 1)
+	{
+		for (size_t section_index = 1; section_index < m_codeSections.size(); ++section_index)
+		{
+			_out << std::endl << _prefix << "section_" << section_index << ": assembly {\n";
+			Functionalizer fcs(_out, _prefix + "    ", _sourceCodes, *this);
+			for (auto const& i: m_codeSections[section_index].items)
+				fcs.feed(i, _debugInfoSelection);
+			fcs.flush();
+			_out << _prefix << "}" << std::endl;
+		}
+	}
 
 	if (!m_data.empty() || !m_subs.empty())
 	{
