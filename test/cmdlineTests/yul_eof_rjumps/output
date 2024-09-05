@@ -1,0 +1,40 @@
+
+======= yul_eof_rjumps/input.yul (EVM) =======
+
+Pretty printed source:
+object "a" {
+    code {
+        {
+            if true { mstore(0, 1) }
+            return(0, 32)
+        }
+    }
+}
+
+
+Binary representation:
+ef00010100040200010010040000000080ffff6001e1000860205ff360015f52e0fff9
+
+Text representation:
+    /* "yul_eof_rjumps/input.yul":49:53   */
+  0x01
+    /* "yul_eof_rjumps/input.yul":46:70   */
+  rjumpi(tag_1)
+    /* "yul_eof_rjumps/input.yul":22:112   */
+tag_2:
+    /* "yul_eof_rjumps/input.yul":93:95   */
+  0x20
+    /* "yul_eof_rjumps/input.yul":90:91   */
+  0x00
+    /* "yul_eof_rjumps/input.yul":83:96   */
+  return
+    /* "yul_eof_rjumps/input.yul":54:70   */
+tag_1:
+    /* "yul_eof_rjumps/input.yul":66:67   */
+  0x01
+    /* "yul_eof_rjumps/input.yul":63:64   */
+  0x00
+    /* "yul_eof_rjumps/input.yul":56:68   */
+  mstore
+    /* "yul_eof_rjumps/input.yul":54:70   */
+  rjump(tag_2)
