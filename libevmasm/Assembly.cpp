@@ -1325,6 +1325,7 @@ LinkerObject const& Assembly::assembleEOF() const
 
 	m_tagPositionsInBytecode = std::vector<size_t>(m_usedTags, std::numeric_limits<size_t>::max());
 	std::map<size_t, uint16_t> dataSectionRef;
+	std::map<size_t, size_t> tagRef;
 
 	for (auto&& [codeSectionIndex, codeSection]: m_codeSections | ranges::views::enumerate)
 	{
@@ -1387,6 +1388,16 @@ LinkerObject const& Assembly::assembleEOF() const
 					m_tagPositionsInBytecode[tagId] = ret.bytecode.size();
 					break;
 				}
+				case RelativeJump:
+				case ConditionalRelativeJump:
+				{
+					ret.bytecode.push_back(static_cast<uint8_t>(i.type() == RelativeJump ? Instruction::RJUMP : Instruction::RJUMPI));
+					auto [subId, tagId] = i.splitForeignPushTag();
+					assertThrow(subId == std::numeric_limits<size_t>::max(), AssemblyException, "Relative jump to sub");
+					tagRef[ret.bytecode.size()] = tagId;
+					appendBigEndianUint16(ret.bytecode, 0u);
+					break;
+				}
 				default:
 					assertThrow(false, InvalidOpcode, "Unexpected opcode while assembling.");
 			}
@@ -1394,6 +1405,19 @@ LinkerObject const& Assembly::assembleEOF() const
 
 		auto sectionEnd = ret.bytecode.size();
 		setCodeSectionSize(codeSectionIndex, sectionEnd - sectionStart);
+	}
+
+	for (auto const& i: tagRef)
+	{
+		auto const& tagId = i.second;
+		assertThrow(tagId < m_tagPositionsInBytecode.size(), AssemblyException, "Reference to non-existing tag.");
+		size_t pos = m_tagPositionsInBytecode[tagId];
+		assertThrow(pos != std::numeric_limits<size_t>::max(), AssemblyException, "Reference to tag without position.");
+
+		ptrdiff_t const bytecodeOffset = static_cast<ptrdiff_t>(pos) - (static_cast<ptrdiff_t>(i.first) + 2);
+		assertThrow(bytecodeOffset < 0x7FFF && bytecodeOffset >= -0x8000, AssemblyException, "Relative jump too far");
+
+		toBigEndian(static_cast<uint16_t>(bytecodeOffset), bytesRef(ret.bytecode.data() + i.first, 2));
 	}
 
 	for (auto const& [name, tagInfo]: m_namedTags)
