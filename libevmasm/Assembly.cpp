@@ -1388,6 +1388,23 @@ LinkerObject const& Assembly::assembleEOF() const
 					m_tagPositionsInBytecode[tagId] = ret.bytecode.size();
 					break;
 				}
+				case CallF:
+				{
+					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::CALLF));
+					appendBigEndianUint16(ret.bytecode, i.data());
+					break;
+				}
+				case JumpF:
+				{
+					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::JUMPF));
+					appendBigEndianUint16(ret.bytecode, i.data());
+					break;
+				}
+				case RetF:
+				{
+					ret.bytecode.push_back(static_cast<uint8_t>(Instruction::RETF));
+					break;
+				}
 				case RelativeJump:
 				case ConditionalRelativeJump:
 				{

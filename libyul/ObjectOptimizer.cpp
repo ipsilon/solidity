@@ -91,6 +91,7 @@ void ObjectOptimizer::optimize(Object& _object, Settings const& _settings, bool 
 
 	OptimiserSuite::run(
 		dialect,
+		std::nullopt, // TODO: Support EOF
 		meter.get(),
 		_object,
 		_settings.optimizeStackAllocation,
