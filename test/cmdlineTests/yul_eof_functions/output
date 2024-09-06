@@ -1,0 +1,46 @@
+
+======= yul_eof_functions/input.yul (EVM) =======
+
+Pretty printed source:
+object "a" {
+    code {
+        { error(f()) }
+        function f() -> result
+        { result := 1 }
+        function error(v)
+        {
+            mstore(0, v)
+            revert(0, 32)
+        }
+    }
+}
+
+
+Binary representation:
+ef000101000c020003000600030006040000000080ffff0001ffff0180ffffe30001e500026001e45f5260205ffd
+
+Text representation:
+    /* "yul_eof_functions/input.yul":40:43   */
+  callf(1)
+    /* "yul_eof_functions/input.yul":34:44   */
+  jumpf(2)
+
+section_1: assembly {
+        /* "yul_eof_functions/input.yul":98:99   */
+      0x01
+        /* "yul_eof_functions/input.yul":55:101   */
+      retf
+}
+
+section_2: assembly {
+        /* "yul_eof_functions/input.yul":157:158   */
+      0x00
+        /* "yul_eof_functions/input.yul":150:162   */
+      mstore
+        /* "yul_eof_functions/input.yul":185:187   */
+      0x20
+        /* "yul_eof_functions/input.yul":182:183   */
+      0x00
+        /* "yul_eof_functions/input.yul":175:188   */
+      revert
+}
