@@ -7,8 +7,8 @@
 #include <algorithm>
 #include <cassert>
 #include <string>
-#include <map>
 #include <unordered_map>
+#include <map>
 #include <vector>
 
 namespace evmc

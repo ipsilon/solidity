@@ -80,13 +80,14 @@ enum evmc_call_kind
     EVMC_CALLCODE = 2,     /**< Request CALLCODE. */
     EVMC_CREATE = 3,       /**< Request CREATE. */
     EVMC_CREATE2 = 4,      /**< Request CREATE2. Valid since Constantinople.*/
-    EVMC_EOFCREATE = 5     /**< Request EOFCREATE. Valid since Prague.*/
+    EVMC_EOFCREATE = 5     /**< Request EOFCREATE. Valid since Osaka.*/
 };
 
 /** The flags for ::evmc_message. */
 enum evmc_flags
 {
-    EVMC_STATIC = 1 /**< Static call mode. */
+    EVMC_STATIC = 1,   /**< Static call mode. */
+    EVMC_DELEGATED = 2 /**< Delegated call mode (EIP-7702). Valid since Prague. */
 };
 
 /**
@@ -101,7 +102,7 @@ struct evmc_message
 
     /**
      * Additional flags modifying the call execution behavior.
-     * In the current version the only valid values are ::EVMC_STATIC or 0.
+     *
      */
     uint32_t flags;
 
@@ -1033,21 +1034,27 @@ enum evmc_revision
     EVMC_CANCUN = 12,
 
     /**
-     * The Prague revision.
+     * The Prague / Pectra revision.
      *
-     * The future next revision after Cancun.
+     * https://eips.ethereum.org/EIPS/eip-7600
      */
     EVMC_PRAGUE = 13,
 
     /**
-     * The Osaka revision.
+     * The Osaka / Fusaka revision.
      *
-     * The future next revision after Prague.
+     * https://eips.ethereum.org/EIPS/eip-7607
      */
     EVMC_OSAKA = 14,
 
+    /**
+     * The unspecified EVM revision used for EVM implementations to expose
+     * experimental features.
+     */
+    EVMC_EXPERIMENTAL = 15,
+
     /** The maximum EVM revision supported. */
-    EVMC_MAX_REVISION = EVMC_OSAKA,
+    EVMC_MAX_REVISION = EVMC_EXPERIMENTAL,
 
     /**
      * The latest known EVM revision with finalized specification.

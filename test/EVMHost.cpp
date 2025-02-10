@@ -416,7 +416,7 @@ evmc::Result EVMHost::call(evmc_message const& _message) noexcept
 		message.input_data = nullptr;
 		message.input_size = 0;
 	}
-	evmc::Result result = m_vm.execute(*this, m_evmRevision, message, code.data(), code.size());
+	evmc::Result result = m_vm.execute(*this, static_cast<evmc_revision>(15), message, code.data(), code.size());
 
 	if (message.kind == EVMC_CREATE || message.kind == EVMC_CREATE2 || message.kind == EVMC_EOFCREATE)
 	{
