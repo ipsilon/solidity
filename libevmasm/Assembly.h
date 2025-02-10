@@ -145,6 +145,70 @@ public:
 	/// Appends @a _data literally to the very end of the bytecode.
 	void appendToAuxiliaryData(bytes const& _data) { m_auxiliaryData += _data; }
 
+	AssemblyItem appendSetModX() { return append(Instruction::SETMODX); }
+	AssemblyItem appendLoadX() { return append(Instruction::LOADX); }
+	AssemblyItem appendStoreX() { return append(Instruction::SETMODX); }
+	AssemblyItem appendAddModX(
+		uint8_t _dstValueIndex,
+		uint8_t _dstStride,
+		uint8_t _xValueIndex,
+		uint8_t _xStride,
+		uint8_t _yValueIndex,
+		uint8_t _yStride,
+		uint8_t _count
+		)
+	{
+		return append(AssemblyItem::modularOperation(
+			Instruction::ADDMODX,
+			_dstValueIndex,
+			_dstStride,
+			_xValueIndex,
+			_xStride,
+			_yValueIndex,
+			_yStride,
+			_count));
+	}
+	AssemblyItem appendSubModX(
+		uint8_t _dstValueIndex,
+		uint8_t _dstStride,
+		uint8_t _xValueIndex,
+		uint8_t _xStride,
+		uint8_t _yValueIndex,
+		uint8_t _yStride,
+		uint8_t _count
+		)
+	{
+		return append(AssemblyItem::modularOperation(
+			Instruction::SUBMODX,
+			_dstValueIndex,
+			_dstStride,
+			_xValueIndex,
+			_xStride,
+			_yValueIndex,
+			_yStride,
+			_count));
+	}
+	AssemblyItem appendMulModX(
+		uint8_t _dstValueIndex,
+		uint8_t _dstStride,
+		uint8_t _xValueIndex,
+		uint8_t _xStride,
+		uint8_t _yValueIndex,
+		uint8_t _yStride,
+		uint8_t _count
+		)
+	{
+		return append(AssemblyItem::modularOperation(
+			Instruction::MULMODX,
+			_dstValueIndex,
+			_dstStride,
+			_xValueIndex,
+			_xStride,
+			_yValueIndex,
+			_yStride,
+			_count));
+	}
+
 	int deposit() const { return m_deposit; }
 	void adjustDeposit(int _adjustment) { m_deposit += _adjustment; solAssert(m_deposit >= 0); }
 	void setDeposit(int _deposit) { m_deposit = _deposit; solAssert(m_deposit >= 0); }

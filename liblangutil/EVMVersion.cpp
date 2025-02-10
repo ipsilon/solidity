@@ -88,6 +88,9 @@ bool EVMVersion::hasOpcode(Instruction _opcode, std::optional<uint8_t> _eofVersi
 	case Instruction::EXTCALL:
 	case Instruction::EXTSTATICCALL:
 	case Instruction::EXTDELEGATECALL:
+	case Instruction::SETMODX:
+	case Instruction::LOADX:
+	case Instruction::STOREX:
 		return _eofVersion.has_value();
 	default:
 		return true;

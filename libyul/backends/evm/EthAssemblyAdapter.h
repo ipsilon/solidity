@@ -74,6 +74,37 @@ public:
 
 	void appendAuxDataLoadN(uint16_t _offset) override;
 
+	void appendSetModX() override;
+	void appendLoadX() override;
+	void appendStoreX() override;
+	void appendAddModX(
+		uint8_t _dstValueIndex,
+		uint8_t _dstStride,
+		uint8_t _xValueIndex,
+		uint8_t _xStride,
+		uint8_t _yValueIndex,
+		uint8_t _yStride,
+		uint8_t _count
+	) override;
+	void appendSubModX(
+		uint8_t _dstValueIndex,
+		uint8_t _dstStride,
+		uint8_t _xValueIndex,
+		uint8_t _xStride,
+		uint8_t _yValueIndex,
+		uint8_t _yStride,
+		uint8_t _count
+	) override;
+	void appendMulModX(
+		uint8_t _dstValueIndex,
+		uint8_t _dstStride,
+		uint8_t _xValueIndex,
+		uint8_t _xStride,
+		uint8_t _yValueIndex,
+		uint8_t _yStride,
+		uint8_t _count
+	) override;
+
 	void markAsInvalid() override;
 
 	langutil::EVMVersion evmVersion() const override;

@@ -62,7 +62,8 @@ enum AssemblyItemType
 	CallF, ///< Jumps to a returning EOF function, adding a new frame to the return stack.
 	JumpF, ///< Jumps to a returning or non-returning EOF function without changing the return stack.
 	RetF, ///< Returns from an EOF function, removing a frame from the return stack.
-	VerbatimBytecode ///< Contains data that is inserted into the bytecode code section without modification.
+	VerbatimBytecode, ///< Contains data that is inserted into the bytecode code section without modification.
+	EVMMAXArithmeticInstruction ///< One of three possible modular arithmetic instructions of EVMMAX
 };
 
 enum class Precision { Precise , Approximate };
@@ -148,6 +149,35 @@ public:
 		return AssemblyItem(ConditionalRelativeJump, Instruction::RJUMPI, _tag.data(), _debugData);
 	}
 
+	static AssemblyItem modularOperation(
+		Instruction _instruction,
+		uint8_t _dstValueIndex,
+		uint8_t _dstStride,
+		uint8_t _xValueIndex,
+		uint8_t _xStride,
+		uint8_t _yValueIndex,
+		uint8_t _yStride,
+		uint8_t _count,
+		langutil::DebugData::ConstPtr _debugData = langutil::DebugData::create())
+	{
+		solAssert(
+			_instruction == Instruction::ADDMODX ||
+			_instruction == Instruction::SUBMODX ||
+			_instruction == Instruction::MULMODX
+		);
+
+		u256 data =
+		u256(_dstValueIndex) << 8 * 6 |
+		u256(_dstStride) << 8 * 5 |
+		u256(_xValueIndex) << 8 * 4 |
+		u256(_xStride) << 8 * 3 |
+		u256(_yValueIndex) << 8 * 2 |
+		u256(_yStride) << 8 * 1 |
+		u256(_count);
+
+		return AssemblyItem(EVMMAXArithmeticInstruction, _instruction, data, std::move(_debugData));
+	}
+
 	AssemblyItem(AssemblyItem const&) = default;
 	AssemblyItem(AssemblyItem&&) = default;
 	AssemblyItem& operator=(AssemblyItem const&) = default;
@@ -191,7 +221,8 @@ public:
 			m_type == ConditionalRelativeJump ||
 			m_type == CallF ||
 			m_type == JumpF ||
-			m_type == RetF;
+			m_type == RetF ||
+			m_type == EVMMAXArithmeticInstruction;
 	}
 	/// @returns the instruction of this item (only valid if hasInstruction returns true)
 	Instruction instruction() const

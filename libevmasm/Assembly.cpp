@@ -1558,7 +1558,10 @@ LinkerObject const& Assembly::assembleEOF() const
 					item.instruction() != Instruction::RJUMPI &&
 					item.instruction() != Instruction::CALLF &&
 					item.instruction() != Instruction::JUMPF &&
-					item.instruction() != Instruction::RETF
+					item.instruction() != Instruction::RETF &&
+					item.instruction() != Instruction::ADDMODX &&
+					item.instruction() != Instruction::SUBMODX &&
+					item.instruction() != Instruction::MULMODX
 				);
 				solAssert(!(item.instruction() >= Instruction::PUSH0 && item.instruction() <= Instruction::PUSH32));
 				ret.bytecode += assembleOperation(item);
@@ -1636,6 +1639,12 @@ LinkerObject const& Assembly::assembleEOF() const
 			case RetF:
 				ret.bytecode.push_back(static_cast<uint8_t>(Instruction::RETF));
 				break;
+			case EVMMAXArithmeticInstruction:
+			{
+				ret.bytecode.push_back(static_cast<uint8_t>(item.instruction()));
+				appendBigEndian(ret.bytecode, 7, item.data());
+				break;
+			}
 			default:
 				solAssert(false, "Unexpected opcode while assembling.");
 			}

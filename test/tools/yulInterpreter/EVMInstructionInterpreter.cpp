@@ -499,6 +499,13 @@ u256 EVMInstructionInterpreter::eval(
 	case Instruction::EXTSTATICCALL:
 	case Instruction::EXTDELEGATECALL:
 		solUnimplemented("EOF not yet supported by Yul interpreter.");
+	case Instruction::SETMODX:
+	case Instruction::LOADX:
+	case Instruction::STOREX:
+	case Instruction::ADDMODX:
+	case Instruction::SUBMODX:
+	case Instruction::MULMODX:
+		solUnimplemented("EVMMAX not yet supported by Yul interpreter.");
 	}
 
 	util::unreachable();

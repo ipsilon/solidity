@@ -183,6 +183,13 @@ enum class Instruction: uint8_t
 	LOG3,                     ///< Makes a log entry; 3 topics.
 	LOG4,                     ///< Makes a log entry; 4 topics.
 
+	SETMODX = 0xc0,           ///< Setup modulus context of EVMMAX
+	LOADX = 0xc1,             ///< Load values from EVMMAX context to EVM memory
+	STOREX = 0xc2,            ///< Store values in EVMMAX context from EVM memory
+	ADDMODX = 0xc3,           ///< Compute modular addition in EVMMAX
+	SUBMODX = 0xc4,           ///< Compute modular subtraction in EVMMAX
+	MULMODX = 0xc5,           ///< Compute modular multiplication in EVMMAX
+
 	DATALOADN = 0xd1,         ///< load data from EOF data section
 
 	RJUMP = 0xe0,             ///< relative jump

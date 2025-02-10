@@ -188,7 +188,13 @@ std::map<std::string, Instruction> const solidity::evmasm::c_instructions =
 	{ "CREATE2", Instruction::CREATE2 },
 	{ "REVERT", Instruction::REVERT },
 	{ "INVALID", Instruction::INVALID },
-	{ "SELFDESTRUCT", Instruction::SELFDESTRUCT }
+	{ "SELFDESTRUCT", Instruction::SELFDESTRUCT },
+	{ "SETMODX", Instruction::SETMODX },
+	{ "LOADX", Instruction::LOADX },
+	{ "STOREX", Instruction::STOREX },
+	{ "ADDMODX", Instruction::ADDMODX },
+	{ "SUBMODX", Instruction::SUBMODX },
+	{ "MULMODX", Instruction::MULMODX },
 };
 
 /// @note InstructionInfo is assumed to be the same across all EVM versions except for the instruction name.
@@ -353,7 +359,13 @@ static std::map<Instruction, InstructionInfo> const c_instructionInfo =
 	{Instruction::CREATE2,        {"CREATE2",         0,  4,   1,  true,       Tier::Special}},
 	{Instruction::REVERT,         {"REVERT",          0,  2,   0,  true,       Tier::Zero}},
 	{Instruction::INVALID,        {"INVALID",         0,  0,   0,  true,       Tier::Zero}},
-	{Instruction::SELFDESTRUCT,   {"SELFDESTRUCT",    0,  1,   0,  true,       Tier::Special}}
+	{Instruction::SELFDESTRUCT,   {"SELFDESTRUCT",    0,  1,   0,  true,       Tier::Special}},
+	{Instruction::SETMODX,        {"SETMODX",         0,  3,   0,  true,       Tier::Special}},
+	{Instruction::LOADX,          {"LOADX",           0,  3,   0,  true,       Tier::Special}},
+	{Instruction::STOREX,         {"STOREX",          0,  3,   0,  true,       Tier::Special}},
+	{Instruction::ADDMODX,        {"ADDMODX",         7,  0,   0,  true,       Tier::Special}},
+	{Instruction::SUBMODX,        {"SUBMODX",         7,  0,   0,  true,       Tier::Special}},
+	{Instruction::MULMODX,        {"MULMODX",         7,  0,   0,  true,       Tier::Special}}
 };
 
 InstructionInfo solidity::evmasm::instructionInfo(Instruction _inst, langutil::EVMVersion _evmVersion)

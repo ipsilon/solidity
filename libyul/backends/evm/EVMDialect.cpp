@@ -226,6 +226,9 @@ std::vector<std::optional<BuiltinFunctionForEVM>> createBuiltins(langutil::EVMVe
 			opcode != evmasm::Instruction::CALLF &&
 			opcode != evmasm::Instruction::JUMPF &&
 			opcode != evmasm::Instruction::RETF &&
+			opcode != evmasm::Instruction::ADDMODX &&
+			opcode != evmasm::Instruction::SUBMODX &&
+			opcode != evmasm::Instruction::MULMODX &&
 			_evmVersion.hasOpcode(opcode, _eofVersion) &&
 			!prevRandaoException(name)
 		)
@@ -450,6 +453,108 @@ std::vector<std::optional<BuiltinFunctionForEVM>> createBuiltins(langutil::EVMVe
 				}
 			));
 		}
+		builtins.emplace_back(createFunction(
+			"addmodx",
+			7,
+			0,
+			EVMDialect::sideEffectsOfInstruction(evmasm::Instruction::ADDMODX),
+			ControlFlowSideEffects::fromInstruction(evmasm::Instruction::ADDMODX),
+			{
+				LiteralKind::Number,
+				LiteralKind::Number,
+				LiteralKind::Number,
+				LiteralKind::Number,
+				LiteralKind::Number,
+				LiteralKind::Number,
+				LiteralKind::Number
+			},
+			[](
+				FunctionCall const& _call,
+				AbstractAssembly& _assembly,
+				BuiltinContext&
+			) {
+				yulAssert(_call.arguments.size() == 7);
+				std::vector<uint8_t> values;
+				values.reserve(7);
+
+				for (auto const& argument: _call.arguments)
+				{
+					Literal const* literal = std::get_if<Literal>(&argument);
+					yulAssert(literal, "");
+					yulAssert(literal->value.value() <= std::numeric_limits<uint8_t>::max());
+					values.emplace_back(static_cast<uint8_t>(literal->value.value()));
+				}
+				_assembly.appendAddModX(values[0], values[1], values[2], values[3], values[4], values[5], values[6]);
+			}
+		));
+		builtins.emplace_back(createFunction(
+			"submodx",
+			7,
+			0,
+			EVMDialect::sideEffectsOfInstruction(evmasm::Instruction::SUBMODX),
+			ControlFlowSideEffects::fromInstruction(evmasm::Instruction::SUBMODX),
+			{
+				LiteralKind::Number,
+				LiteralKind::Number,
+				LiteralKind::Number,
+				LiteralKind::Number,
+				LiteralKind::Number,
+				LiteralKind::Number,
+				LiteralKind::Number
+			},
+			[](
+				FunctionCall const& _call,
+				AbstractAssembly& _assembly,
+				BuiltinContext&
+			) {
+				yulAssert(_call.arguments.size() == 7);
+				std::vector<uint8_t> values;
+				values.reserve(7);
+
+				for (auto const& argument: _call.arguments)
+				{
+					Literal const* literal = std::get_if<Literal>(&argument);
+					yulAssert(literal, "");
+					yulAssert(literal->value.value() <= std::numeric_limits<uint8_t>::max());
+					values.emplace_back(static_cast<uint8_t>(literal->value.value()));
+				}
+				_assembly.appendSubModX(values[0], values[1], values[2], values[3], values[4], values[5], values[6]);
+			}
+		));
+		builtins.emplace_back(createFunction(
+			"mulmodx",
+			7,
+			0,
+			EVMDialect::sideEffectsOfInstruction(evmasm::Instruction::MULMODX),
+			ControlFlowSideEffects::fromInstruction(evmasm::Instruction::MULMODX),
+			{
+				LiteralKind::Number,
+				LiteralKind::Number,
+				LiteralKind::Number,
+				LiteralKind::Number,
+				LiteralKind::Number,
+				LiteralKind::Number,
+				LiteralKind::Number
+			},
+			[](
+				FunctionCall const& _call,
+				AbstractAssembly& _assembly,
+				BuiltinContext&
+			) {
+				yulAssert(_call.arguments.size() == 7);
+				std::vector<uint8_t> values;
+				values.reserve(7);
+
+				for (auto const& argument: _call.arguments)
+				{
+					Literal const* literal = std::get_if<Literal>(&argument);
+					yulAssert(literal, "");
+					yulAssert(literal->value.value() <= std::numeric_limits<uint8_t>::max());
+					values.emplace_back(static_cast<uint8_t>(literal->value.value()));
+				}
+				_assembly.appendMulModX(values[0], values[1], values[2], values[3], values[4], values[5], values[6]);
+			}
+		));
 	}
 	yulAssert(
 		ranges::all_of(builtins, [](std::optional<BuiltinFunctionForEVM> const& _builtinFunction){

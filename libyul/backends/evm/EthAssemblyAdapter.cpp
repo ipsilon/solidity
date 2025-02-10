@@ -232,6 +232,84 @@ void EthAssemblyAdapter::appendAuxDataLoadN(uint16_t _offset)
 	m_assembly.appendAuxDataLoadN(_offset);
 }
 
+void EthAssemblyAdapter::appendSetModX()
+{
+	m_assembly.appendSetModX();
+}
+
+void EthAssemblyAdapter::appendLoadX()
+{
+	m_assembly.appendLoadX();
+}
+
+void EthAssemblyAdapter::appendStoreX()
+{
+	m_assembly.appendStoreX();
+}
+
+void EthAssemblyAdapter::appendAddModX(
+	uint8_t _dstValueIndex,
+	uint8_t _dstStride,
+	uint8_t _xValueIndex,
+	uint8_t _xStride,
+	uint8_t _yValueIndex,
+	uint8_t _yStride,
+	uint8_t _count
+)
+{
+	m_assembly.appendAddModX(
+		_dstValueIndex,
+		_dstStride,
+		_xValueIndex,
+		_xStride,
+		_yValueIndex,
+		_yStride,
+		_count
+	);
+}
+
+void EthAssemblyAdapter::appendSubModX(
+	uint8_t _dstValueIndex,
+	uint8_t _dstStride,
+	uint8_t _xValueIndex,
+	uint8_t _xStride,
+	uint8_t _yValueIndex,
+	uint8_t _yStride,
+	uint8_t _count
+)
+{
+	m_assembly.appendSubModX(
+		_dstValueIndex,
+		_dstStride,
+		_xValueIndex,
+		_xStride,
+		_yValueIndex,
+		_yStride,
+		_count
+	);
+}
+
+void EthAssemblyAdapter::appendMulModX(
+	uint8_t _dstValueIndex,
+	uint8_t _dstStride,
+	uint8_t _xValueIndex,
+	uint8_t _xStride,
+	uint8_t _yValueIndex,
+	uint8_t _yStride,
+	uint8_t _count
+)
+{
+	m_assembly.appendMulModX(
+		_dstValueIndex,
+		_dstStride,
+		_xValueIndex,
+		_xStride,
+		_yValueIndex,
+		_yStride,
+		_count
+	);
+}
+
 void EthAssemblyAdapter::markAsInvalid()
 {
 	m_assembly.markAsInvalid();

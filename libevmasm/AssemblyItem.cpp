@@ -119,6 +119,8 @@ std::pair<std::string, std::string> AssemblyItem::nameAndData(langutil::EVMVersi
 		return {"VERBATIM", util::toHex(verbatimData())};
 	case AuxDataLoadN:
 		return {"AUXDATALOADN", util::toString(data())};
+	case EVMMAXArithmeticInstruction:
+		return {instructionInfo(instruction(), _evmVersion).name, toStringInHex(data())};
 	case UndefinedItem:
 		solAssert(false);
 	}
@@ -192,6 +194,8 @@ size_t AssemblyItem::bytesRequired(size_t _addressLength, langutil::EVMVersion _
 		return 2;
 	case ReturnContract:
 		return 2;
+	case EVMMAXArithmeticInstruction:
+		return 1 + 7;
 	case UndefinedItem:
 		solAssert(false);
 	}
@@ -242,6 +246,7 @@ size_t AssemblyItem::returnValues() const
 	case PushDeployTimeAddress:
 		return 1;
 	case Tag:
+	case EVMMAXArithmeticInstruction:
 		return 0;
 	case VerbatimBytecode:
 		return std::get<1>(*m_verbatimBytecode);
@@ -284,6 +289,7 @@ bool AssemblyItem::canBeFunctional() const
 	case AuxDataLoadN:
 		return true;
 	case Tag:
+	case EVMMAXArithmeticInstruction:
 		return false;
 	case AssignImmutable:
 	case VerbatimBytecode:
@@ -410,6 +416,10 @@ std::string AssemblyItem::toAssemblyText(Assembly const& _assembly) const
 	case RetF:
 		text = "retf";
 		break;
+	case EVMMAXArithmeticInstruction:
+		text = util::toLower(instructionInfo(instruction(), _assembly.evmVersion()).name) +
+			"{" + util::toHex(toCompactBigEndian(data(), 1)) + "}";
+		break;
 	}
 	if (m_jumpType == JumpType::IntoFunction || m_jumpType == JumpType::OutOfFunction)
 	{
@@ -486,6 +496,10 @@ std::ostream& solidity::evmasm::operator<<(std::ostream& _out, AssemblyItem cons
 		break;
 	case AuxDataLoadN:
 		_out << " AuxDataLoadN " << util::toString(_item.data());
+		break;
+	case EVMMAXArithmeticInstruction:
+		_out << " " << instructionInfo(_item.instruction(), EVMVersion()).name <<
+			" " << util::toHex(toCompactBigEndian(_item.data(), 1));
 		break;
 	case UndefinedItem:
 		_out << " ???";

@@ -199,6 +199,60 @@ void NoOutputAssembly::appendReturnContract(ContainerID)
 	yulAssert(false, "returncontract not implemented.");
 }
 
+void NoOutputAssembly::appendSetModX()
+{
+	yulAssert(false, "returncontract not implemented.");
+}
+
+void NoOutputAssembly::appendLoadX()
+{
+	yulAssert(false, "returncontract not implemented.");
+}
+
+void NoOutputAssembly::appendStoreX()
+{
+	yulAssert(false, "returncontract not implemented.");
+}
+
+void NoOutputAssembly::appendAddModX(
+	uint8_t,
+	uint8_t,
+	uint8_t,
+	uint8_t,
+	uint8_t,
+	uint8_t,
+	uint8_t
+	)
+{
+	yulAssert(false, "returncontract not implemented.");
+}
+
+void NoOutputAssembly::appendSubModX(
+	uint8_t,
+	uint8_t,
+	uint8_t,
+	uint8_t,
+	uint8_t,
+	uint8_t,
+	uint8_t
+	)
+{
+	yulAssert(false, "returncontract not implemented.");
+}
+\
+void NoOutputAssembly::appendMulModX(
+	uint8_t,
+	uint8_t,
+	uint8_t,
+	uint8_t,
+	uint8_t,
+	uint8_t,
+	uint8_t
+	)
+{
+	yulAssert(false, "returncontract not implemented.");
+}
+
 NoOutputEVMDialect::NoOutputEVMDialect(EVMDialect const& _copyFrom):
 	EVMDialect(_copyFrom.evmVersion(), _copyFrom.eofVersion(), _copyFrom.providesObjectAccess())
 {

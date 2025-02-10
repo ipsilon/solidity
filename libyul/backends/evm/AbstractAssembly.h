@@ -149,6 +149,44 @@ public:
 	/// EOF auxiliary data in data section and the auxiliary data are different things.
 	virtual void appendToAuxiliaryData(bytes const& _data) = 0;
 
+	/// EVMMAX specific assembly items appending
+	/// Appends EVMMAX modulus context initializing instruction
+	virtual void appendSetModX() = 0;
+	/// Appends EVMMAX values loading instruction
+	virtual void appendLoadX() = 0;
+	/// Appends EVMMAX values storing instruction
+	virtual void appendStoreX() = 0;
+	/// Appends EVMMAX modular arithmetic instructions accordingly to their names.
+	/// The instructions take x, y values indexes lists defined as start index, stride and count.
+	/// Perform modular arithmetic computations and return values to destination values list.
+	virtual void appendAddModX(
+		uint8_t _dstValueIndex,
+		uint8_t _dstStride,
+		uint8_t _xValueIndex,
+		uint8_t _xStride,
+		uint8_t _yValueIndex,
+		uint8_t _yStride,
+		uint8_t _count
+	) = 0;
+	virtual void appendSubModX(
+		uint8_t _dstValueIndex,
+		uint8_t _dstStride,
+		uint8_t _xValueIndex,
+		uint8_t _xStride,
+		uint8_t _yValueIndex,
+		uint8_t _yStride,
+		uint8_t _count
+	) = 0;
+	virtual void appendMulModX(
+		uint8_t _dstValueIndex,
+		uint8_t _dstStride,
+		uint8_t _xValueIndex,
+		uint8_t _xStride,
+		uint8_t _yValueIndex,
+		uint8_t _yStride,
+		uint8_t _count
+	) = 0;
+
 	/// Mark this assembly as invalid. Any attempt to request bytecode from it should throw.
 	virtual void markAsInvalid() = 0;
 
