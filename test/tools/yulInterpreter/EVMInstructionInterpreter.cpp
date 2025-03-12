@@ -505,6 +505,7 @@ u256 EVMInstructionInterpreter::eval(
 	case Instruction::ADDMODX:
 	case Instruction::SUBMODX:
 	case Instruction::MULMODX:
+	case Instruction::INVMODX:
 		solUnimplemented("EVMMAX not yet supported by Yul interpreter.");
 	}
 

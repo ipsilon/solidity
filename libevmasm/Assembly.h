@@ -208,6 +208,21 @@ public:
 			_yStride,
 			_count));
 	}
+	AssemblyItem appendInvModX(
+		uint8_t _dstValueIndex,
+		uint8_t _dstStride,
+		uint8_t _xValueIndex,
+		uint8_t _xStride,
+		uint8_t _count
+	)
+	{
+		return append(AssemblyItem::modularInversion(
+			_dstValueIndex,
+			_dstStride,
+			_xValueIndex,
+			_xStride,
+			_count));
+	}
 
 	int deposit() const { return m_deposit; }
 	void adjustDeposit(int _adjustment) { m_deposit += _adjustment; solAssert(m_deposit >= 0); }

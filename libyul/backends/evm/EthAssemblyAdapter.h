@@ -104,6 +104,13 @@ public:
 		uint8_t _yStride,
 		uint8_t _count
 	) override;
+	void appendInvModX(
+		uint8_t _dstValueIndex,
+		uint8_t _dstStride,
+		uint8_t _xValueIndex,
+		uint8_t _xStride,
+		uint8_t _count
+		) override;
 
 	void markAsInvalid() override;
 

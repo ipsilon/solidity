@@ -1642,7 +1642,10 @@ LinkerObject const& Assembly::assembleEOF() const
 			case EVMMAXArithmeticInstruction:
 			{
 				ret.bytecode.push_back(static_cast<uint8_t>(item.instruction()));
-				appendBigEndian(ret.bytecode, 7, item.data());
+				if (item.instruction() == Instruction::INVMODX)
+					appendBigEndian(ret.bytecode, 5, item.data());
+				else
+					appendBigEndian(ret.bytecode, 7, item.data());
 				break;
 			}
 			default:

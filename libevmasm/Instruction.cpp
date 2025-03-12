@@ -365,7 +365,8 @@ static std::map<Instruction, InstructionInfo> const c_instructionInfo =
 	{Instruction::STOREX,         {"STOREX",          0,  3,   0,  true,       Tier::Special}},
 	{Instruction::ADDMODX,        {"ADDMODX",         7,  0,   0,  true,       Tier::Special}},
 	{Instruction::SUBMODX,        {"SUBMODX",         7,  0,   0,  true,       Tier::Special}},
-	{Instruction::MULMODX,        {"MULMODX",         7,  0,   0,  true,       Tier::Special}}
+	{Instruction::MULMODX,        {"MULMODX",         7,  0,   0,  true,       Tier::Special}},
+	{Instruction::INVMODX,        {"INVMODX",         5,  0,   0,  true,       Tier::Special}}
 };
 
 InstructionInfo solidity::evmasm::instructionInfo(Instruction _inst, langutil::EVMVersion _evmVersion)

@@ -186,6 +186,13 @@ public:
 		uint8_t _yStride,
 		uint8_t _count
 	) = 0;
+	virtual void appendInvModX(
+		uint8_t _dstValueIndex,
+		uint8_t _dstStride,
+		uint8_t _xValueIndex,
+		uint8_t _xStride,
+		uint8_t _count
+	) = 0;
 
 	/// Mark this assembly as invalid. Any attempt to request bytecode from it should throw.
 	virtual void markAsInvalid() = 0;

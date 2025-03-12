@@ -167,15 +167,34 @@ public:
 		);
 
 		u256 data =
-		u256(_dstValueIndex) << 8 * 6 |
-		u256(_dstStride) << 8 * 5 |
-		u256(_xValueIndex) << 8 * 4 |
-		u256(_xStride) << 8 * 3 |
-		u256(_yValueIndex) << 8 * 2 |
-		u256(_yStride) << 8 * 1 |
-		u256(_count);
+				u256(_dstValueIndex) << 8 * 6 |
+				u256(_dstStride) << 8 * 5 |
+				u256(_xValueIndex) << 8 * 4 |
+				u256(_xStride) << 8 * 3 |
+				u256(_yValueIndex) << 8 * 2 |
+				u256(_yStride) << 8 * 1 |
+				u256(_count);
 
 		return AssemblyItem(EVMMAXArithmeticInstruction, _instruction, data, std::move(_debugData));
+	}
+
+	static AssemblyItem modularInversion(
+		uint8_t _dstValueIndex,
+		uint8_t _dstStride,
+		uint8_t _xValueIndex,
+		uint8_t _xStride,
+		uint8_t _count,
+		langutil::DebugData::ConstPtr _debugData = langutil::DebugData::create())
+	{
+
+		u256 data =
+			u256(_dstValueIndex) << 8 * 4 |
+			u256(_dstStride) << 8 * 3 |
+			u256(_xValueIndex) << 8 * 2 |
+			u256(_xStride) << 8 * 1 |
+			u256(_count);
+
+		return AssemblyItem(EVMMAXArithmeticInstruction, Instruction::INVMODX, data, std::move(_debugData));
 	}
 
 	AssemblyItem(AssemblyItem const&) = default;

@@ -189,6 +189,7 @@ enum class Instruction: uint8_t
 	ADDMODX = 0xc3,           ///< Compute modular addition in EVMMAX
 	SUBMODX = 0xc4,           ///< Compute modular subtraction in EVMMAX
 	MULMODX = 0xc5,           ///< Compute modular multiplication in EVMMAX
+	INVMODX = 0xc6,           ///< Compute modular inversion in EVMMAX
 
 	DATALOADN = 0xd1,         ///< load data from EOF data section
 

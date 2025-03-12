@@ -555,6 +555,38 @@ std::vector<std::optional<BuiltinFunctionForEVM>> createBuiltins(langutil::EVMVe
 				_assembly.appendMulModX(values[0], values[1], values[2], values[3], values[4], values[5], values[6]);
 			}
 		));
+		builtins.emplace_back(createFunction(
+			"invmodx",
+			5,
+			0,
+			EVMDialect::sideEffectsOfInstruction(evmasm::Instruction::INVMODX),
+			ControlFlowSideEffects::fromInstruction(evmasm::Instruction::INVMODX),
+			{
+				LiteralKind::Number,
+				LiteralKind::Number,
+				LiteralKind::Number,
+				LiteralKind::Number,
+				LiteralKind::Number,
+			},
+			[](
+				FunctionCall const& _call,
+				AbstractAssembly& _assembly,
+				BuiltinContext&
+			) {
+				yulAssert(_call.arguments.size() == 5);
+				std::vector<uint8_t> values;
+				values.reserve(5);
+
+				for (auto const& argument: _call.arguments)
+				{
+					Literal const* literal = std::get_if<Literal>(&argument);
+					yulAssert(literal, "");
+					yulAssert(literal->value.value() <= std::numeric_limits<uint8_t>::max());
+					values.emplace_back(static_cast<uint8_t>(literal->value.value()));
+				}
+				_assembly.appendInvModX(values[0], values[1], values[2], values[3], values[4]);
+			}
+			));
 	}
 	yulAssert(
 		ranges::all_of(builtins, [](std::optional<BuiltinFunctionForEVM> const& _builtinFunction){

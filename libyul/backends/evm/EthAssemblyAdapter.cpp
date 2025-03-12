@@ -310,6 +310,23 @@ void EthAssemblyAdapter::appendMulModX(
 	);
 }
 
+void EthAssemblyAdapter::appendInvModX(
+	uint8_t _dstValueIndex,
+	uint8_t _dstStride,
+	uint8_t _xValueIndex,
+	uint8_t _xStride,
+	uint8_t _count
+)
+{
+	m_assembly.appendInvModX(
+		_dstValueIndex,
+		_dstStride,
+		_xValueIndex,
+		_xStride,
+		_count
+	);
+}
+
 void EthAssemblyAdapter::markAsInvalid()
 {
 	m_assembly.markAsInvalid();

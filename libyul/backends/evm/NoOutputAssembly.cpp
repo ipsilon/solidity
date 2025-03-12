@@ -201,17 +201,17 @@ void NoOutputAssembly::appendReturnContract(ContainerID)
 
 void NoOutputAssembly::appendSetModX()
 {
-	yulAssert(false, "returncontract not implemented.");
+	yulAssert(false, "setmodx not implemented.");
 }
 
 void NoOutputAssembly::appendLoadX()
 {
-	yulAssert(false, "returncontract not implemented.");
+	yulAssert(false, "loadx not implemented.");
 }
 
 void NoOutputAssembly::appendStoreX()
 {
-	yulAssert(false, "returncontract not implemented.");
+	yulAssert(false, "storex not implemented.");
 }
 
 void NoOutputAssembly::appendAddModX(
@@ -224,7 +224,7 @@ void NoOutputAssembly::appendAddModX(
 	uint8_t
 	)
 {
-	yulAssert(false, "returncontract not implemented.");
+	yulAssert(false, "addmondx not implemented.");
 }
 
 void NoOutputAssembly::appendSubModX(
@@ -237,9 +237,9 @@ void NoOutputAssembly::appendSubModX(
 	uint8_t
 	)
 {
-	yulAssert(false, "returncontract not implemented.");
+	yulAssert(false, "submodx not implemented.");
 }
-\
+
 void NoOutputAssembly::appendMulModX(
 	uint8_t,
 	uint8_t,
@@ -250,7 +250,18 @@ void NoOutputAssembly::appendMulModX(
 	uint8_t
 	)
 {
-	yulAssert(false, "returncontract not implemented.");
+	yulAssert(false, "mulmodx not implemented.");
+}
+
+void NoOutputAssembly::appendInvModX(
+	uint8_t,
+	uint8_t,
+	uint8_t,
+	uint8_t,
+	uint8_t
+)
+{
+	yulAssert(false, "invmodx not implemented.");
 }
 
 NoOutputEVMDialect::NoOutputEVMDialect(EVMDialect const& _copyFrom):
